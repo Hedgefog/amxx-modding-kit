@@ -231,9 +231,9 @@ SetPlayerCamera(const &pPlayer, bool:bValue) {
       engfunc(EngFunc_SetView, pPlayer, pPlayer);
     }
 
-    ExecuteForward(g_pfwDeactivated, _, pPlayer);
-
     g_iPlayerCameraBits &= ~BIT(pPlayer & 31);
+
+    ExecuteForward(g_pfwDeactivated, _, pPlayer);
 
     @Player_ResetVariables(pPlayer);
   }
