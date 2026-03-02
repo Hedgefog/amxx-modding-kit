@@ -33,7 +33,7 @@ A powerful modular framework for **AMX Mod X** that provides ready-to-use game s
 | [🔫 Custom Weapons](./api/custom-weapons) | OOP-style custom weapon API with methods, members, and inheritance |
 | [🔄 Custom Events](./api/custom-events) | Simple event system to communicate between plugins |
 | [🦸 Player Model](./api/player-model) | System to manage player model and custom animation |
-| [🏃‍♂️ Player Effects](./api/player-effects) | Server-side particles system |
+| [🏃‍♂️ Player Effects](./api/player-effects) | Player effect system with timed duration, invoke/revoke lifecycle, and state management |
 | [🎩 Player Cosmetics](./api/player-cosmetics) | Simple system to manage player cosmetics |
 | [🔀 States](./api/states) | State machines with transitions, guards, and lifecycle hooks |
 
