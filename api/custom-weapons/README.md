@@ -215,7 +215,7 @@ You can also hook into specific events or methods of a weapon class:
 
 ```pawn
 public plugin_precache() {
-  CW_RegisterClassMethodHook(WEAPON_NAME, CW_Method_Think, "CWHook_Weapon_PrimaryAttack");
+  CW_RegisterClassNativeMethodHook(WEAPON_NAME, CW_Method_Think, "CWHook_Weapon_PrimaryAttack");
 }
 
 public CWHook_Weapon_PrimaryAttack(const pWeapon) {
@@ -223,7 +223,7 @@ public CWHook_Weapon_PrimaryAttack(const pWeapon) {
 }
 ```
 
-Here, `CW_RegisterClassMethodHook` attaches a callback to the weapon’s `Think` method, letting you execute custom logic every server tick.
+Here, `CW_RegisterClassNativeMethodHook` attaches a callback to the weapon’s `Think` method, letting you execute custom logic every server tick.
 
 ## 🔫 Example: Simple 9mm handgun
 

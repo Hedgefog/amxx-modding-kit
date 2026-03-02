@@ -264,7 +264,7 @@ public plugin_natives() {
   register_native("CW_ImplementClassMethod", "Native_ImplementMethod");
   register_native("CW_RegisterClassVirtualMethod", "Native_RegisterVirtualMethod");
 
-  register_native("CW_RegisterClassMethodHook", "Native_RegisterMethodHook");
+  register_native("CW_RegisterClassNativeMethodHook", "Native_RegisterMethodHook");
   register_native("CW_GetMethodReturn", "Native_GetMethodReturn");
   register_native("CW_SetMethodReturn", "Native_SetMethodReturn");
 

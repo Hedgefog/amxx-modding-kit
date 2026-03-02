@@ -55,7 +55,7 @@ native bool:CW_IsClassRegistered(const szClassname[]);
  * @param szClassname Weapon class
  * @param szCallback Callback
  */
-native CW_RegisterClassMethodHook(const szClassname[], CW_Method:method, const szCallback[], bool:bPost = false);
+native CW_RegisterClassNativeMethodHook(const szClassname[], CW_Method:method, const szCallback[], bool:bPost = false);
 
 /**
  * Gets the return value of the current method
