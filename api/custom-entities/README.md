@@ -16,7 +16,7 @@ Let's create a `key` item entity:
 #include <api_custom_entities>
 
 public plugin_precache() {
-    CE_RegisterClass("item_key", CE_Preset_Item);
+  CE_RegisterClass("item_key", CE_Preset_Item);
 }
 ```
 
@@ -28,20 +28,20 @@ The entity currently lacks a model and size, so let's provide them by implementi
 
 ```pawn
 public plugin_precache() {
-    // Precaching key model
-    precache_model("models/w_security.mdl");
+  // Precaching key model
+  precache_model("models/w_security.mdl");
 
-    CE_RegisterClass("item_key", CE_Class_BaseItem);
-    
-    CE_ImplementClassMethod("item_key", CE_Method_Allocate, "@KeyItem_Allocate");
+  CE_RegisterClass("item_key", CE_Class_BaseItem);
+  
+  CE_ImplementClassMethod("item_key", CE_Method_Allocate, "@KeyItem_Allocate");
 }
 
 @KeyItem_Allocate(const this) {
-    CE_CallBaseMethod(); // Calling the base Allocate method
+  CE_CallBaseMethod(); // Calling the base Allocate method
 
-    CE_SetMemberString(this, CE_Member_szModel, "models/w_security.mdl");
-    CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0}); 
-    CE_SetMemberVec(this, CE_Member_vecMaxs, Float:{8.0, 8.0, 8.0});
+  CE_SetMemberString(this, CE_Member_szModel, "models/w_security.mdl");
+  CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0}); 
+  CE_SetMemberVec(this, CE_Member_vecMaxs, Float:{8.0, 8.0, 8.0});
 }
 ```
 
@@ -67,31 +67,31 @@ However, we still need to add some logic to the entity, as it currently does not
 new g_rgbPlayerHasKey[MAX_PLAYERS + 1];
 
 public plugin_precache() {
-    CE_RegisterClass("item_key", CE_Class_BaseItem);
-    
-    CE_ImplementClassMethod("item_key", CE_Method_Allocate, "@KeyItem_Allocate");
-    CE_ImplementClassMethod("item_key", CE_Method_CanPickup, "@KeyItem_CanPickup");
-    CE_ImplementClassMethod("item_key", CE_Method_Pickup, "@KeyItem_Pickup");
+  CE_RegisterClass("item_key", CE_Class_BaseItem);
+  
+  CE_ImplementClassMethod("item_key", CE_Method_Allocate, "@KeyItem_Allocate");
+  CE_ImplementClassMethod("item_key", CE_Method_CanPickup, "@KeyItem_CanPickup");
+  CE_ImplementClassMethod("item_key", CE_Method_Pickup, "@KeyItem_Pickup");
 }
 
 @KeyItem_Allocate(const this) { ... }
 
 @KeyItem_CanPickup(const this, const pPlayer) {
-    // Base implementation returns false if the item is not on the ground
-    if (!CE_CallBaseMethod(pPlayer)) return false;
+  // Base implementation returns false if the item is not on the ground
+  if (!CE_CallBaseMethod(pPlayer)) return false;
 
-    // Can't pick up if already holding a key
-    if (g_rgbPlayerHasKey[pPlayer]) return false;
+  // Can't pick up if already holding a key
+  if (g_rgbPlayerHasKey[pPlayer]) return false;
 
-    return true;
+  return true;
 }
 
 @KeyItem_Pickup(const this, const pPlayer) {
-    CE_CallBaseMethod(pPlayer);
+  CE_CallBaseMethod(pPlayer);
 
-    client_print(pPlayer, print_center, "You have found a key!");
+  client_print(pPlayer, print_center, "You have found a key!");
 
-    g_rgbPlayerHasKey[pPlayer] = true;
+  g_rgbPlayerHasKey[pPlayer] = true;
 }
 ```
 
@@ -112,19 +112,19 @@ If you want to implement different key types, you can use custom members. Let's 
 #define m_iType "iType"
 
 enum KeyType {
-    KeyType_Red = 0,
-    KeyType_Yellow,
-    KeyType_Green,
-    KeyType_Blue
+  KeyType_Red = 0,
+  KeyType_Yellow,
+  KeyType_Green,
+  KeyType_Blue
 };
 
 new const KEY_NAMES[KeyType][] = { "red", "yellow", "green", "blue" };
 
 new const Float:KEY_COLORS_F[KeyType][3] = {
-    {255.0, 0.0, 0.0},
-    {255.0, 255.0, 0.0},
-    {0.0, 255.0, 0.0},
-    {0.0, 0.0, 255.0},
+  {255.0, 0.0, 0.0},
+  {255.0, 255.0, 0.0},
+  {0.0, 255.0, 0.0},
+  {0.0, 0.0, 255.0},
 };
 
 new const g_szModel[] = "models/w_security.mdl";
@@ -132,58 +132,58 @@ new const g_szModel[] = "models/w_security.mdl";
 new bool:g_rgbPlayerHasKey[MAX_PLAYERS + 1][KeyType];
 
 public plugin_precache() {
-    precache_model(g_szModel);
+  precache_model(g_szModel);
 
-    CE_RegisterClass(ENTITY_CLASSNAME, CE_Class_BaseItem);
-    
-    CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Allocate, "@KeyItem_Allocate");
-    CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Spawn, "@KeyItem_Spawn");
-    CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_CanPickup, "@KeyItem_CanPickup");
-    CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Pickup, "@KeyItem_Pickup");
+  CE_RegisterClass(ENTITY_CLASSNAME, CE_Class_BaseItem);
+  
+  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Allocate, "@KeyItem_Allocate");
+  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Spawn, "@KeyItem_Spawn");
+  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_CanPickup, "@KeyItem_CanPickup");
+  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Pickup, "@KeyItem_Pickup");
 
-    // Bind the "type" entity key to the "m_iType" entity member
-    CE_RegisterClassKeyMemberBinding(ENTITY_CLASSNAME, "type", m_iType, CEMemberType_Cell);
+  // Bind the "type" entity key to the "m_iType" entity member
+  CE_RegisterClassKeyMemberBinding(ENTITY_CLASSNAME, "type", m_iType, CEMemberType_Cell);
 }
 
 @KeyItem_Allocate(const this) {
-    CE_CallBaseMethod();
+  CE_CallBaseMethod();
 
-    CE_SetMemberString(this, CE_Member_szModel, g_szModel);
-    CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0}); 
-    CE_SetMemberVec(this, CE_Member_vecMaxs, Float:{8.0, 8.0, 8.0});
+  CE_SetMemberString(this, CE_Member_szModel, g_szModel);
+  CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0}); 
+  CE_SetMemberVec(this, CE_Member_vecMaxs, Float:{8.0, 8.0, 8.0});
 
-    CE_SetMember(this, m_iType, KeyType_Red); // Default key type
+  CE_SetMember(this, m_iType, KeyType_Red); // Default key type
 }
 
 @KeyItem_Spawn(const this) {
-    CE_CallBaseMethod();
+  CE_CallBaseMethod();
 
-    new KeyType:iType = CE_GetMember(this, m_iType);
+  new KeyType:iType = CE_GetMember(this, m_iType);
 
-    // Adding rendering effect based on key type
-    set_pev(this, pev_renderfx, kRenderFxGlowShell);
-    set_pev(this, pev_renderamt, 1.0);
-    set_pev(this, pev_rendercolor, KEY_COLORS_F[iType]);
+  // Adding rendering effect based on key type
+  set_pev(this, pev_renderfx, kRenderFxGlowShell);
+  set_pev(this, pev_renderamt, 1.0);
+  set_pev(this, pev_rendercolor, KEY_COLORS_F[iType]);
 }
 
 @KeyItem_CanPickup(const this, const pPlayer) {
-    if (!CE_CallBaseMethod(pPlayer)) return false;
+  if (!CE_CallBaseMethod(pPlayer)) return false;
 
-    new KeyType:iType = CE_GetMember(this, m_iType);
+  new KeyType:iType = CE_GetMember(this, m_iType);
 
-    if (g_rgbPlayerHasKey[pPlayer][iType]) return false;
+  if (g_rgbPlayerHasKey[pPlayer][iType]) return false;
 
-    return true;
+  return true;
 }
 
 @KeyItem_Pickup(const this, const pPlayer) {
-    CE_CallBaseMethod(pPlayer);
+  CE_CallBaseMethod(pPlayer);
 
-    new KeyType:iType = CE_GetMember(this, m_iType);
+  new KeyType:iType = CE_GetMember(this, m_iType);
 
-    client_print(pPlayer, print_center, "You have found a %s key!", KEY_NAMES[iType]);
+  client_print(pPlayer, print_center, "You have found a %s key!", KEY_NAMES[iType]);
 
-    g_rgbPlayerHasKey[pPlayer][iType] = true;
+  g_rgbPlayerHasKey[pPlayer][iType] = true;
 }
 ```
 
@@ -200,40 +200,40 @@ This implementation has a small issue: changing the `iType` member does not imme
 #define UpdateColor "UpdateColor"
 
 public plugin_precache() {
-    ...
+  ...
 
-    // Registering new class methods
-    CE_RegisterClassMethod(ENTITY_CLASSNAME, SetType, "@KeyItem_SetType", CEMemberType_Cell);
-    CE_RegisterClassMethod(ENTITY_CLASSNAME, UpdateColor, "@KeyItem_UpdateColor");
+  // Registering new class methods
+  CE_RegisterClassMethod(ENTITY_CLASSNAME, SetType, "@KeyItem_SetType", CEMemberType_Cell);
+  CE_RegisterClassMethod(ENTITY_CLASSNAME, UpdateColor, "@KeyItem_UpdateColor");
 
-    ...
+  ...
 }
 
 @KeyItem_Allocate(const this) { ... }
 
 @KeyItem_Spawn(const this) {
-    CE_CallBaseMethod();
+  CE_CallBaseMethod();
 
-    // Calling UpdateColor method to set color
-    CE_CallMethod(this, UpdateColor);
+  // Calling UpdateColor method to set color
+  CE_CallMethod(this, UpdateColor);
 }
 
 @KeyItem_CanPickup(const this, const pPlayer) { ... }
 @KeyItem_Pickup(const this, const pPlayer) { ... }
 
 @KeyItem_SetType(const this, const iType) {
-    CE_SetMember(this, m_iType, iType);
+  CE_SetMember(this, m_iType, iType);
 
-    // Calling UpdateColor method to apply color change
-    CE_CallMethod(this, UpdateColor);
+  // Calling UpdateColor method to apply color change
+  CE_CallMethod(this, UpdateColor);
 }
 
 @KeyItem_UpdateColor(const this) {
-    new KeyType:iType = CE_GetMember(this, m_iType);
+  new KeyType:iType = CE_GetMember(this, m_iType);
 
-    set_pev(this, pev_renderfx, kRenderFxGlowShell);
-    set_pev(this, pev_renderamt, 1.0);
-    set_pev(this, pev_rendercolor, KEY_COLORS_F[iType]);
+  set_pev(this, pev_renderfx, kRenderFxGlowShell);
+  set_pev(this, pev_renderamt, 1.0);
+  set_pev(this, pev_rendercolor, KEY_COLORS_F[iType]);
 }
 ```
 
@@ -268,8 +268,8 @@ You can also create the entity using the `CE_Create` native function and then ca
 new pKey = CE_Create("item_key", vecOrigin);
 
 if (pKey != FM_NULLENT) {
-    CE_SetMember(pKey, "iType", 3);
-    dllfunc(DLLFunc_Spawn, pKey);
+  CE_SetMember(pKey, "iType", 3);
+  dllfunc(DLLFunc_Spawn, pKey);
 }
 ```
 
