@@ -209,7 +209,8 @@ Float:@Weapon_GetMaxSpeed(const this) {
 
 @Weapon_SpawnProjectile(const this) {
   static pPlayer; pPlayer = get_ent_data_entity(this, "CBasePlayerItem", "m_pPlayer");
-  static Float:vecForward[3]; get_global_vector(GL_v_forward, vecForward);
+  static Float:vecAngles[3]; pev(pPlayer, pev_v_angle, vecAngles);
+  static Float:vecForward[3]; angle_vector(vecAngles, ANGLEVECTOR_FORWARD, vecForward);
   static Float:vecSrc[3]; ExecuteHam(Ham_Player_GetGunPosition, pPlayer, vecSrc);
 
   xs_vec_add_scaled(vecSrc, vecForward, 16.0, vecSrc);
