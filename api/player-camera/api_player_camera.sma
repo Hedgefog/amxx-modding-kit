@@ -291,8 +291,8 @@ CreatePlayerCamera(const &pPlayer) {
   g_rgpPlayerTargetEntity[this] = this;
   g_rgflPlayerCameraDistance[this] = 200.0;
   g_rgbPlayerCameraAxisLock[this] = bool:{false, false, false};
-  xs_vec_copy(Float:{0.0, 0.0, 0.0}, g_rgflPlayerCameraAngles[this]);
-  xs_vec_copy(Float:{0.0, 0.0, 0.0}, g_rgflPlayerCameraOffset[this]);
+  xs_vec_set(g_rgflPlayerCameraAngles[this], 0.0, 0.0, 0.0);
+  xs_vec_set(g_rgflPlayerCameraOffset[this], 0.0, 0.0, 0.0);
   g_rgflPlayerCameraThinkDelay[this] = 0.01;
   g_rgflPlayerCameraDamping[this] = 1.0;
 }
@@ -348,7 +348,7 @@ CreatePlayerCamera(const &pPlayer) {
     !!!HACKHACK: Used to prevent camera from clipping through players
     Unfortunately TraceHull doesn't ignore players even with IGNORE_MONSTERS flag
   */
-  while (IS_PLAYER(pHit)) {
+  if (IS_PLAYER(pHit)) {
     static rgiPlayerSolidType[MAX_PLAYERS + 1];
     new iPlayerRestoreBits = 0;
 
@@ -364,21 +364,18 @@ CreatePlayerCamera(const &pPlayer) {
       pHit = get_tr2(g_pTrace, TR_pHit);
     }
 
-    // Loop through players we mutated to restore their solid type
-    for (new pPlayer = 1; pPlayer <= MaxClients; ++pPlayer) {
-      if (iPlayerRestoreBits & BIT(pPlayer & 31)) {
-        set_pev(pPlayer, pev_solid, rgiPlayerSolidType[pPlayer]);
+    if (iPlayerRestoreBits) {
+      // Loop through players we mutated to restore their solid type
+      for (new pPlayer = 1; pPlayer <= MaxClients; ++pPlayer) {
+        if (iPlayerRestoreBits & BIT(pPlayer & 31)) {
+          set_pev(pPlayer, pev_solid, rgiPlayerSolidType[pPlayer]);
+        }
       }
     }
   }
 
-  static Float:flFraction; get_tr2(g_pTrace, TR_flFraction, flFraction);
-
-  if(flFraction != 1.0) { 
-    for (new i = 0; i < 3; ++i) {
-      g_rgvecPlayerCameraCurrentOrigin[this][i] = vecOrigin[i] + (vecBack[i] * (g_rgflPlayerCameraDistance[this] * flFraction)) + (vecVelocity[i] * 0.01);
-    }
-  }
+  get_tr2(g_pTrace, TR_vecEndPos, g_rgvecPlayerCameraCurrentOrigin[this]);
+  xs_vec_add_scaled(g_rgvecPlayerCameraCurrentOrigin[this], vecVelocity, 0.01, g_rgvecPlayerCameraCurrentOrigin[this]);
 
   UTIL_VecLerp(vecOldOrigin, g_rgvecPlayerCameraCurrentOrigin[this], g_rgflPlayerCameraDamping[this], g_rgvecPlayerCameraCurrentOrigin[this]);
 
