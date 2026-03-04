@@ -1,14 +1,26 @@
 # ♟️ Custom Entities API
 
-The Custom Entities API provides a flexible framework for managing and creating custom entities. This API allows developers to register, spawn, manipulate, and interact with custom entities, defining their behavior through hooks and methods. This API uses OOP-style logic and integrates seamlessly with game maps.
+The **Custom Entities API** provides a flexible OOP-style framework for managing and creating custom entities in AMX Mod X. This API allows developers to register entity classes, implement their behavior through methods, and interact with custom entities programmatically. Entities integrate seamlessly with game maps — just place them using the registered classname.
 
-## ⚙️ Implementing a Custom Entity
+## 🚀 Features
 
-### 📚 Registering a New Entity Class
+- OOP-style entity class system with inheritance
+- Preset base classes for common entity types (items, props, triggers, monsters)
+- Custom members for storing entity-specific data
+- Custom methods for extending entity behavior
+- Key-value bindings for map editor integration
+- Native method hooks for intercepting entity behavior
+- Full lifecycle control (create, spawn, destroy, respawn)
 
-To implement a custom entity, the first thing you need to do is register a new entity class using the `CE_RegisterClass` native function. This can be done in the `plugin_precache` function, allowing you to place your entities directly on the map using the registered class as the `classname`.
+---
 
-Let's create a `key` item entity:
+## ⚙️ Getting Started
+
+### Registering a New Entity Class
+
+To create a custom entity, register a new entity class using `CE_RegisterClass` in `plugin_precache`. This allows you to place entities directly on the map using the registered classname.
+
+Let's create a simple key item:
 
 ```pawn
 #include <api_custom_entities>
@@ -18,65 +30,73 @@ public plugin_precache() {
 }
 ```
 
-In this example, the `CE_Class_BaseItem` preset class is used to implement the item. It inherits logic for items such as pickup methods.
+The `CE_Class_BaseItem` preset provides built-in item logic including pickup handling.
 
-#### 🔗 Extending an Existing Entity
+**Available Preset Classes:**
+- `CE_Class_Base` — Basic entity
+- `CE_Class_BaseItem` — Pickable item
+- `CE_Class_BaseProp` — Static prop
+- `CE_Class_BaseTrigger` — Trigger zone
+- `CE_Class_BaseMonster` — NPC entity
+- `CE_Class_BaseBsp` — BSP brush entity
 
-You can inherit properties from an existing entity by specifying the base entity during registration.
+### Extending an Existing Class
+
+You can inherit from an existing entity class to extend its behavior:
 
 ```pawn
-#include <api_custom_entities>
-
 public plugin_precache() {
   CE_RegisterClass("item_gold_key", "item_key");
 }
 ```
 
-This example creates `item_gold_key`, inheriting properties and logic from `item_key`.
+This creates `item_gold_key` that inherits all properties and methods from `item_key`.
 
-### ⚙️ Setting Entity Members
+---
 
-The entity currently lacks a model and size, so let's provide them by implementing the `Create` method for the entity to supply all the necessary members:
+## 🛠 Implementing Entity Methods
+
+### The Create Method
+
+The `Create` method initializes entity members when an instance is allocated. Use it to set default values.
 
 ```pawn
+new const g_szModel[] = "models/w_security.mdl";
+
 public plugin_precache() {
-  // Precaching key model
-  precache_model("models/w_security.mdl");
+  precache_model(g_szModel);
 
   CE_RegisterClass("item_key", CE_Class_BaseItem);
-  
   CE_ImplementClassMethod("item_key", CE_Method_Create, "@KeyItem_Create");
 }
 
 @KeyItem_Create(const this) {
-  CE_CallBaseMethod(); // Calling the base Create method
+  CE_CallBaseMethod();
 
-  CE_SetMemberString(this, CE_Member_szModel, "models/w_security.mdl");
-  CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0}); 
+  CE_SetMemberString(this, CE_Member_szModel, g_szModel);
+  CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0});
   CE_SetMemberVec(this, CE_Member_vecMaxs, Float:{8.0, 8.0, 8.0});
 }
 ```
 
-In the implementation of the `Create` method, the `CE_CallBaseMethod()` call allows us to invoke the base `Create` method of the `CE_Class_BaseItem` preset class, allowing it to handle its own allocation logic before executing custom logic. Make sure to include this call in every implemented or overridden method unless you need to fully rewrite the implementation.
+> [!CAUTION]
+> The `Create` method is called during entity allocation. Do not modify entity variables (`pev`) or invoke engine functions here — use it only for initializing custom entity members!
 
->[!CAUTION]
->
-> The `Create` method is called during entity initialization. Modifying entity variables or invoking engine functions on the entity within this method may lead to unexpected results. Use this method only for initializing custom entity members!
+> [!CAUTION]
+> Always call `CE_CallBaseMethod()` with all method arguments to ensure the parent class executes its logic properly.
 
->[!CAUTION]
->
-> When calling `CE_CallBaseMethod`, you need to pass all method arguments to ensure the base method receives the necessary context for its operations.
+**Common Members:**
+- `CE_Member_szModel` — Entity model path
+- `CE_Member_vecMins` / `CE_Member_vecMaxs` — Bounding box
+- `CE_Member_flRespawnTime` — Respawn delay
+- `CE_Member_flLifeTime` — Entity lifetime
 
-Natives like `CE_SetMemberString` and `CE_SetMemberVec` are used to set members/properties for the entity instance. Constants such as `CE_Member_*` are used to specify the property names that will set the model each time the entity is spawned or its variables are reset. For example, `CE_Member_szModel` sets `pev->model` of the entity every respawn. Similarly, `CE_Member_vecMins` and `CE_Member_vecMaxs` specify the entity's bounding box.
+### Writing Entity Logic
 
-### 💡 Writing Logic for the Entity
-
-Our `item_key` entity is functional, allowing you to place the entity with the classname `item_key` on your map. It will spawn in the game and can be picked up.
-
-However, we still need to add some logic to the entity, as it currently does not perform any specific actions. Let's implement the `Pickup` and `CanPickup` methods in the same way we implemented `Create`:
+Let's implement `CanPickup` and `Pickup` methods to add behavior to our key item:
 
 ```pawn
-new g_rgbPlayerHasKey[MAX_PLAYERS + 1];
+new bool:g_rgbPlayerHasKey[MAX_PLAYERS + 1];
 
 public plugin_precache() {
   CE_RegisterClass("item_key", CE_Class_BaseItem);
@@ -86,32 +106,31 @@ public plugin_precache() {
   CE_ImplementClassMethod("item_key", CE_Method_Pickup, "@KeyItem_Pickup");
 }
 
-@KeyItem_Create(const this) { ... }
+@KeyItem_Create(const this) { /* ... */ }
 
 @KeyItem_CanPickup(const this, const pPlayer) {
-  // Base implementation returns false if the item is not on the ground
+  // Base implementation checks if item is on ground
   if (!CE_CallBaseMethod(pPlayer)) return false;
-
-  // Can't pick up if already holding a key
+  
+  // Prevent pickup if player already has a key
   if (g_rgbPlayerHasKey[pPlayer]) return false;
-
+  
   return true;
 }
 
 @KeyItem_Pickup(const this, const pPlayer) {
   CE_CallBaseMethod(pPlayer);
-
-  client_print(pPlayer, print_center, "You have found a key!");
-
+  
   g_rgbPlayerHasKey[pPlayer] = true;
+  client_print(pPlayer, print_center, "You have found a key!");
 }
 ```
 
-This simple implementation will display the text `"You have found a key!"` to the player who picks up the key and mark that the player has picked up a key.
+---
 
-### 🧩 Custom Members
+## 🧩 Custom Members
 
-If you want to implement different key types, you can use custom members. Let's update our logic and improve the code:
+Custom members allow you to store entity-specific data. Let's add different key types:
 
 ```pawn
 #include <amxmodx>
@@ -119,7 +138,7 @@ If you want to implement different key types, you can use custom members. Let's 
 
 #include <api_custom_entities>
 
-#define ENTITY_CLASSNAME "item_key"
+#define ENTITY_NAME "item_key"
 
 #define m_iType "iType"
 
@@ -136,7 +155,7 @@ new const Float:KEY_COLORS_F[KeyType][3] = {
   {255.0, 0.0, 0.0},
   {255.0, 255.0, 0.0},
   {0.0, 255.0, 0.0},
-  {0.0, 0.0, 255.0},
+  {0.0, 0.0, 255.0}
 };
 
 new const g_szModel[] = "models/w_security.mdl";
@@ -146,15 +165,15 @@ new bool:g_rgbPlayerHasKey[MAX_PLAYERS + 1][KeyType];
 public plugin_precache() {
   precache_model(g_szModel);
 
-  CE_RegisterClass(ENTITY_CLASSNAME, CE_Class_BaseItem);
+  CE_RegisterClass(ENTITY_NAME, CE_Class_BaseItem);
   
-  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Create, "@KeyItem_Create");
-  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Spawn, "@KeyItem_Spawn");
-  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_CanPickup, "@KeyItem_CanPickup");
-  CE_ImplementClassMethod(ENTITY_CLASSNAME, CE_Method_Pickup, "@KeyItem_Pickup");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Create, "@KeyItem_Create");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Spawn, "@KeyItem_Spawn");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_CanPickup, "@KeyItem_CanPickup");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Pickup, "@KeyItem_Pickup");
 
-  // Bind the "type" entity key to the "m_iType" entity member
-  CE_RegisterClassKeyMemberBinding(ENTITY_CLASSNAME, "type", m_iType, CEMemberType_Cell);
+  // Bind map key-value "type" to member "m_iType"
+  CE_RegisterClassKeyMemberBinding(ENTITY_NAME, "type", m_iType, CEMemberType_Cell);
 }
 
 @KeyItem_Create(const this) {
@@ -164,7 +183,7 @@ public plugin_precache() {
   CE_SetMemberVec(this, CE_Member_vecMins, Float:{-8.0, -8.0, 0.0}); 
   CE_SetMemberVec(this, CE_Member_vecMaxs, Float:{8.0, 8.0, 8.0});
 
-  CE_SetMember(this, m_iType, KeyType_Red); // Default key type
+  CE_SetMember(this, m_iType, KeyType_Red); // Default type
 }
 
 @KeyItem_Spawn(const this) {
@@ -172,7 +191,7 @@ public plugin_precache() {
 
   new KeyType:iType = CE_GetMember(this, m_iType);
 
-  // Adding rendering effect based on key type
+  // Apply glow effect based on key type
   set_pev(this, pev_renderfx, kRenderFxGlowShell);
   set_pev(this, pev_renderamt, 1.0);
   set_pev(this, pev_rendercolor, KEY_COLORS_F[iType]);
@@ -193,50 +212,46 @@ public plugin_precache() {
 
   new KeyType:iType = CE_GetMember(this, m_iType);
 
-  client_print(pPlayer, print_center, "You have found a %s key!", KEY_NAMES[iType]);
-
   g_rgbPlayerHasKey[pPlayer][iType] = true;
+  client_print(pPlayer, print_center, "You have found a %s key!", KEY_NAMES[iType]);
 }
 ```
 
-Here, we added `KeyType` constants to represent different key types and implemented the `Spawn` method to set rendering effects based on the key type.
+Using `CE_RegisterClassKeyMemberBinding`, you can set the key type directly in the map editor via the `type` key-value.
 
-You may have noticed the constant `m_iType`, which is a string constant used for the custom member we work with using `CE_GetMember` and `CE_SetMember` natives. We also use `CE_RegisterClassKeyMemberBinding` to bind this member to the entity key `type`, allowing us to change the key type by setting the `type` key-value on the map.
+---
 
-### 📦 Custom Methods
+## 📦 Custom Methods
 
-This implementation has a small issue: changing the `iType` member does not immediately update the entity's color until the entity respawns. To resolve this, let's add `SetType` and `UpdateColor` methods to change the type correctly and update the entity's color in real time:
+Custom methods extend entity behavior beyond built-in methods. Let's add `SetType` and `UpdateColor` methods:
 
 ```pawn
 #define SetType "SetType"
 #define UpdateColor "UpdateColor"
 
 public plugin_precache() {
-  ...
+  CE_RegisterClass(ENTITY_NAME, CE_Class_BaseItem);
 
-  // Registering new class methods
-  CE_RegisterClassMethod(ENTITY_CLASSNAME, SetType, "@KeyItem_SetType", CE_Type_Cell);
-  CE_RegisterClassMethod(ENTITY_CLASSNAME, UpdateColor, "@KeyItem_UpdateColor");
+  // Register custom methods
+  CE_RegisterClassMethod(ENTITY_NAME, SetType, "@KeyItem_SetType", CE_Type_Cell);
+  CE_RegisterClassMethod(ENTITY_NAME, UpdateColor, "@KeyItem_UpdateColor");
 
-  ...
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Create, "@KeyItem_Create");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Spawn, "@KeyItem_Spawn");
+  /* ... */
 }
-
-@KeyItem_Create(const this) { ... }
 
 @KeyItem_Spawn(const this) {
   CE_CallBaseMethod();
 
-  // Calling UpdateColor method to set color
+  // Use custom method to set color
   CE_CallMethod(this, UpdateColor);
 }
 
-@KeyItem_CanPickup(const this, const pPlayer) { ... }
-@KeyItem_Pickup(const this, const pPlayer) { ... }
-
-@KeyItem_SetType(const this, const iType) {
+@KeyItem_SetType(const this, const KeyType:iType) {
   CE_SetMember(this, m_iType, iType);
 
-  // Calling UpdateColor method to apply color change
+  // Update color when type changes
   CE_CallMethod(this, UpdateColor);
 }
 
@@ -249,61 +264,69 @@ public plugin_precache() {
 }
 ```
 
-### 🔧 Hooks
+Now you can change the key type at runtime using `CE_CallMethod(pKey, "SetType", KeyType_Blue)`.
 
-You can hook into specific native methods of an entity class using `CE_RegisterClassNativeMethodHook`:
+---
+
+## 🔧 Hooks
+
+Hook into native methods to intercept entity behavior:
 
 ```pawn
 public plugin_precache() {
-  CE_RegisterClassNativeMethodHook(ENTITY_CLASSNAME, CE_Method_Spawn, "CEHook_KeyItem_Spawn");
+  CE_RegisterClass(ENTITY_NAME, CE_Class_BaseItem);
+  CE_RegisterClassNativeMethodHook(ENTITY_NAME, CE_Method_Spawn, "CEHook_KeyItem_Spawn");
 }
 
 public CEHook_KeyItem_Spawn(const pEntity) {
-  // Do something after entity spawns
+  // Execute custom logic when any key item spawns
+  log_amx("Key item spawned: %d", pEntity);
 }
 ```
 
-Here, `CE_RegisterClassNativeMethodHook` attaches a callback to the entity's `Spawn` method, letting you execute custom logic when the entity spawns.
+Use the `bPost` parameter to hook after the method executes:
 
-### 🕵️‍♂️ Testing and Debugging
+```pawn
+CE_RegisterClassNativeMethodHook(ENTITY_NAME, CE_Method_Spawn, "CEHook_KeyItem_Spawn_Post", true);
+```
 
-> What if we don't have a map yet to test it? Is there another way to spawn our entity?
+---
 
-Yes, there are a few ways to do it!
+## 🕵️‍♂️ Testing and Debugging
 
-#### Spawning an Entity Using the Console
+### Console Commands
 
-You can spawn an entity using the console command `ce_spawn <classname> [...members]`. The `<classname>` parameter is the `classname` of the registered entity, and `[...members]` are optional parameters to set members before spawning. Let's spawn a `"Green"` key:
-
+**Spawn an entity:**
 ```bash
 ce_spawn "item_key" "iType" 3
 ```
 
-You can also invoke methods using the console command `ce_call_method <entity> <classname> <method> [...params]`. In this command, the `<entity>` parameter is the entity index, `<classname>` is the entity class, `<method>` is the method to call, and `[...params]` are optional parameters for method arguments. For example, to use the `SetType` method to change the key type to `Blue`, use:
-
+**Call a method on an entity:**
 ```bash
-ce_call_method <entity> "item_key" "SetType" 3
+ce_call_method <entity_index> "item_key" "SetType" 3
 ```
 
-Replace `<entity>` with the desired entity index, which you can obtain from the console message after executing `ce_spawn` or by running `ce_list` to get a list of custom entities.
+**List all custom entities:**
+```bash
+ce_list
+```
 
-
-#### Spawning an Entity with Code
-
-You can also create the entity using the `CE_Create` native function and then call the engine `Spawn` function on it:
+### Spawning via Code
 
 ```pawn
+new Float:vecOrigin[3] = {0.0, 0.0, 0.0};
 new pKey = CE_Create("item_key", vecOrigin);
 
 if (pKey != FM_NULLENT) {
-  CE_SetMember(pKey, "iType", 3);
+  CE_SetMember(pKey, m_iType, KeyType_Blue);
   dllfunc(DLLFunc_Spawn, pKey);
 }
 ```
 
-You can also call the `SetType` method to change the key type to `Blue`:
+Or use custom methods:
+
 ```pawn
-CE_CallMethod(pKey, "SetType", 3);
+CE_CallMethod(pKey, "SetType", KeyType_Blue);
 ```
 
 ---

@@ -49,7 +49,48 @@ public plugin_precache() {
 }
 ```
 
-This code will precache the banana model from the `my-library.json` file. You can access model using `Asset_GetPath` or `Asset_GetModelIndex` functions. It also possible to pass string reference to the `Asset_Precache` function to get path of the precached asset to the passed string. The function also returns type of precached asset. Here is an example:
+This code will precache the banana model from the `my-library.json` file. You can access model using `Asset_GetPath` or `Asset_GetModelIndex` functions.
+
+### Precaching an Entire Library
+
+You can precache all assets in a library at once using `Asset_Library_Precache`:
+
+```pawn
+public plugin_precache() {
+  Asset_Library_Precache("my-library");
+}
+```
+
+### Checking Library and Asset Status
+
+To check if a library is loaded:
+
+```pawn
+if (Asset_Library_IsLoaded("my-library")) {
+  log_amx("Library is loaded!");
+}
+```
+
+To check if an asset is precached:
+
+```pawn
+if (Asset_IsPrecached("my-library", "banana-model")) {
+  log_amx("Banana model is precached!");
+}
+```
+
+To get the type of an asset:
+
+```pawn
+new Asset_Type:iType = Asset_GetType("my-library", "banana-model");
+if (iType == Asset_Type_Model) {
+  log_amx("It's a model!");
+}
+```
+
+### Getting Asset Path with Precache
+
+It is also possible to pass string reference to the `Asset_Precache` function to get path of the precached asset to the passed string. The function also returns type of precached asset. Here is an example:
 
 ```pawn
 new g_szBananaModel[MAX_RESOURCE_PATH_LENGTH];
@@ -91,7 +132,7 @@ public plugin_precache() {
 }
 ```
 
-You can also use `Asset_PrecacheList` helper function to precache assets and get all pathes at the same time:
+You can also use `Asset_PrecacheList` helper function to precache assets and get all paths at the same time:
 
 ```pawn
 new g_szAnnoyingSounds[4][MAX_RESOURCE_PATH_LENGTH];
@@ -105,6 +146,13 @@ public plugin_precache() {
 ```
 
 Much better now. Even if you use this function for asset with single resource it will still work but only write first resource to the passed array.
+
+If you need to get paths without precaching (for already precached assets), you can use `Asset_GetPathsList`:
+
+```pawn
+new g_szPaths[4][MAX_RESOURCE_PATH_LENGTH];
+new g_iPathsNum = Asset_GetPathsList("my-library", "annoying-sounds", g_szPaths, sizeof(g_szPaths), charsmax(g_szPaths[]));
+```
 
 ---
 
@@ -158,6 +206,69 @@ new iValue = Asset_GetInteger("my-library", "my-float-value");
 The function will return `123` because `123.45` will be rounded to `123`.
 
 However vector and string variables cannot be converted to other types, same as other types cannot be converted to vector or string.
+
+### Sound Functions
+
+The Assets API provides convenient functions for emitting sounds using assets:
+
+#### Emitting Entity Sounds
+
+Use `Asset_EmitSound` to emit a sound from an entity:
+
+```pawn
+// Emit a random sound from the asset list
+Asset_EmitSound(pEntity, CHAN_VOICE, "my-library", "annoying-sounds");
+
+// Emit a specific sound from the asset list (index 0)
+Asset_EmitSound(pEntity, CHAN_VOICE, "my-library", "annoying-sounds", 0);
+
+// With custom volume and pitch
+Asset_EmitSound(pEntity, CHAN_VOICE, "my-library", "annoying-sounds", ASSET_INDEX_RANDOM, 0.5, ATTN_NORM, 0, PITCH_HIGH);
+```
+
+#### Emitting Ambient Sounds
+
+Use `Asset_EmitAmbientSound` to emit an ambient sound at a position:
+
+```pawn
+new Float:vecOrigin[3] = { 0.0, 0.0, 0.0 };
+Asset_EmitAmbientSound(pEntity, vecOrigin, "my-library", "ambient-sounds", ASSET_INDEX_RANDOM, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+```
+
+#### Playing Client-Side Sounds
+
+Use `Asset_PlayClientSound` to play a sound directly to a player:
+
+```pawn
+// Play to a specific player
+Asset_PlayClientSound(pPlayer, "my-library", "ui-sounds", ASSET_INDEX_RANDOM);
+
+// Play to all players (use player index 0)
+Asset_PlayClientSound(0, "my-library", "ui-sounds", 0);
+```
+
+#### Getting Sound Duration
+
+Use `Asset_GetSoundDuration` to get the duration of a sound asset in seconds:
+
+```pawn
+new Float:flDuration = Asset_GetSoundDuration("my-library", "annoying-sounds", 0);
+log_amx("Sound duration: %.2f seconds", flDuration);
+```
+
+### Model Functions
+
+#### Setting Entity Model
+
+Use `Asset_SetModel` to set an entity's model using an asset:
+
+```pawn
+// Set model using a specific asset
+Asset_SetModel(pEntity, "my-library", "banana-model");
+
+// Set a random model from an asset list
+Asset_SetModel(pEntity, "my-library", "fruit-models", ASSET_INDEX_RANDOM);
+```
 
 ### Handling Missing Assets
 
@@ -222,16 +333,14 @@ This is usefull for mods with own asset libraries. You can pre-load the librarie
 
 #include <api_assets>
 
-new g_szBananaModel[MAX_RESOURCE_PATH_LENGTH];
-new g_szAppleModel[MAX_RESOURCE_PATH_LENGTH];
-new g_szAnnoyingSounds[4][MAX_RESOURCE_PATH_LENGTH];
-
-new g_iAnnoyingSoundsNum = 0;
 
 public plugin_precache() {
-  Asset_Precache("my-library", "banana-model", g_szBananaModel, charsmax(g_szBananaModel));
-  Asset_Precache("my-library", "apple-model", g_szAppleModel, charsmax(g_szAppleModel));
-  g_iAnnoyingSoundsNum = Asset_PrecacheList("my-library", "annoying-sounds", g_szAnnoyingSounds, sizeof(g_szAnnoyingSounds), charsmax(g_szAnnoyingSounds[]));
+  // Precache and store path for models we need to reference
+  Asset_Precache("my-library", "banana-model");
+  
+  // Precache assets we only need to use via Asset_ functions
+  Asset_Precache("my-library", "apple-model");
+  Asset_Precache("my-library", "annoying-sounds");
 }
 
 public plugin_init() {
@@ -251,7 +360,7 @@ public Command_Banana(const pPlayer) {
 
 @Banana_Create() {
   new this = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"));
-  engfunc(EngFunc_SetModel, this, g_szBananaModel);
+  Asset_SetModel(this, "my-library", "banana-model");
   set_pev(this, pev_solid, SOLID_TRIGGER);
   set_pev(this, pev_movetype, MOVETYPE_TOSS);
   dllfunc(DLLFunc_Spawn, this);
@@ -260,15 +369,16 @@ public Command_Banana(const pPlayer) {
 }
 
 @Banana_Corrupt(const &this) {
-  engfunc(EngFunc_SetModel, this, g_szAppleModel);
+  // Use Asset_SetModel to change the model directly
+  Asset_SetModel(pBanana, "my-library", "apple-model");
 }
 
 public Task_CorruptBanana(const iTaskId) {
   new pBanana = iTaskId;
 
-  @Banana_Corrupt(pBanana);
-
-  emit_sound(pBanana, CHAN_VOICE, g_szAnnoyingSounds[random(g_iAnnoyingSoundsNum)], VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+  // Use Asset_EmitSound with random sound from list
+  Asset_EmitSound(pBanana, CHAN_VOICE, "my-library", "annoying-sounds");
+  
   client_print(0, print_chat, "Oh no! Angry scientists have corrupted the banana!");
 }
 ```
