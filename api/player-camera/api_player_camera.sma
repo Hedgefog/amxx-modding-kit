@@ -236,6 +236,8 @@ SetPlayerCamera(const &pPlayer, bool:bValue) {
       g_pCamera = CreatePlayerCamera(pPlayer);
     }
 
+    if (g_pCamera == FM_NULLENT) return;
+
     new iResult = 0; ExecuteForward(g_pfwActivate, iResult, pPlayer);
     if (iResult != PLUGIN_CONTINUE) return;
 
@@ -301,6 +303,8 @@ CreatePlayerCamera(const &pPlayer) {
   }
 
   new pCamera = engfunc(EngFunc_CreateNamedEntity, iszClassname);
+
+  if (pCamera == FM_NULLENT) return FM_NULLENT;
 
   set_pev(pCamera, pev_classname, "trigger_camera");
   set_pev(pCamera, pev_modelindex, engfunc(EngFunc_ModelIndex, g_szCameraModel));

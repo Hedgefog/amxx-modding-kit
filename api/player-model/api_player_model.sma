@@ -43,7 +43,7 @@ public plugin_precache() {
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Model", "1.1.0", "Hedgehog Fog");
+  register_plugin("[API] Player Model", "1.1.1", "Hedgehog Fog");
 
   register_forward(FM_SetClientKeyValue, "FMHook_SetClientKeyValue");
   register_forward(FM_UpdateClientData, "FMHook_UpdateClientData");
@@ -394,6 +394,8 @@ bool:@Player_ShouldUseCurrentModel(const &this) {
 
 @PlayerSubModel_Create(const &pPlayer) {
   new this = engfunc(EngFunc_CreateNamedEntity, g_iszSubModelClassname);
+  if (this == FM_NULLENT) return FM_NULLENT;
+
   set_pev(this, pev_movetype, MOVETYPE_FOLLOW);
   set_pev(this, pev_aiment, pPlayer);
   set_pev(this, pev_owner, pPlayer);

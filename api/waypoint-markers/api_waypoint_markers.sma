@@ -63,7 +63,7 @@ public plugin_precache() {
 }
 
 public plugin_init() {
-  register_plugin("[API] Waypoint Markers", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Waypoint Markers", "1.0.1", "Hedgehog Fog");
 
   register_forward(FM_OnFreeEntPrivateData, "FMHook_OnFreeEntPrivateData", 0);
 
@@ -178,6 +178,8 @@ public FMHook_OnFreeEntPrivateData(const pEntity) {
 @Marker_Create() {
   new iId = g_iMarkersNum;
   new this = engfunc(EngFunc_CreateNamedEntity, g_iszInfoTargetClassname);
+
+  if (this == FM_NULLENT) return FM_NULLENT;
 
   set_pev(this, pev_classname, MARKER_CLASSNAME);
   set_pev(this, pev_scale, 1.0);

@@ -111,7 +111,7 @@ public plugin_precache() {
 }
 
 public plugin_init() {
-  register_plugin("[API] Particles", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Particles", "1.0.1", "Hedgehog Fog");
 
   g_pCvarEnabled = register_cvar("particles", "1");
   bind_pcvar_num(g_pCvarEnabled, g_bEnabled);
@@ -832,7 +832,6 @@ CalculateSystemsNum() {
 
   @Particle_InitEntity(iParticleId);
 
-
   @ParticleSystem_SyncParticleVars(iId, iParticleId);
 }
 
@@ -990,6 +989,7 @@ AllocateParticleId() {
   new iSystemId = g_rgParticles[iId][Particle_SystemId];
 
   new pParticle = CreateParticleEntity(Float:{0.0, 0.0, 0.0}, Float:{0.0, 0.0, 0.0});
+  if (pParticle == FM_NULLENT) return;
 
   g_rgParticles[iId][Particle_Entity] = pParticle;
   g_rgiEntityParticleId[pParticle] = iId;
@@ -1012,6 +1012,8 @@ AllocateParticleId() {
 
 CreateParticleEntity(const Float:vecOrigin[3], const Float:vecAngles[3]) {
   new pEntity = engfunc(EngFunc_CreateNamedEntity, g_iszParticleClassName);
+  if (pEntity == FM_NULLENT) return FM_NULLENT;
+
   dllfunc(DLLFunc_Spawn, pEntity);
 
   set_pev(pEntity, pev_classname, PARTICLE_CLASSNAME);

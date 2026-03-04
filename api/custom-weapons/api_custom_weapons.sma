@@ -224,7 +224,7 @@ public plugin_precache() {
 public plugin_init() {
   g_bPrecache = false;
 
-  register_plugin("[API] Custom Player Weapons", "Hedgehog Fog", "2.0.0");
+  register_plugin("[API] Custom Player Weapons", "Hedgehog Fog", "2.0.1");
 
   get_weaponname(BASE_WEAPON_ID, ARG_STRREF(g_szBaseWeaponName));
   g_iszBaseClassName = engfunc(EngFunc_AllocString, g_szBaseWeaponName);
@@ -4174,6 +4174,7 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
   if (s_pFakeItem == FM_NULLENT) {
     // Initialize the fake item as a smoke grenade (cannot be dropped)
     s_pFakeItem = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "weapon_smokegrenade"));
+    if (s_pFakeItem == FM_NULLENT) return false;
 
     dllfunc(DLLFunc_Spawn, s_pFakeItem);
 
