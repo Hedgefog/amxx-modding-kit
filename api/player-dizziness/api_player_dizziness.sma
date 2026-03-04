@@ -249,6 +249,7 @@ public HamHook_Player_Jump_Post(const pPlayer) {
   
   // floatclamp(g_flPushForce * g_rgflPlayerDizzinessStrength[this], flMinPushForce, floatmin(flMaxMoveSpeed, DIZZINESS_PUSH_FORCE_MAX));
 
+  // TODO?: Remove
   xs_vec_set(g_rgvecPlayerPushVelocityAcc[this], 0.0, 0.0, 0.0);
 
   static Float:flPushForce; flPushForce = random_float(flMinPushForce, flMaxPushForce);
@@ -287,13 +288,13 @@ public HamHook_Player_Jump_Post(const pPlayer) {
 
   xs_vec_normalize(vecVelocity, vecVelocity);
   xs_vec_mul_scalar(vecVelocity, random_float(80.0, 100.0), vecVelocity);
-  vecVelocity[2] = PLAYER_JUMP_FORCE - (PLAYER_JUMP_FORCE * 0.2125 * g_rgflPlayerDizzinessStrength[this]);
+  vecVelocity[2] = floatmax(PLAYER_JUMP_FORCE - (PLAYER_JUMP_FORCE * 0.2125 * g_rgflPlayerDizzinessStrength[this]), 0.0);
 
   set_pev(this, pev_velocity, vecVelocity);
   set_pev(this, pev_basevelocity, Float:{0.0, 0.0, 0.0});
 }
 
-Float:@Player_CalculateMovementVelocity(const &this, Float:vecOut[3]) {
+@Player_CalculateMovementVelocity(const &this, Float:vecOut[3]) {
   static iButtons; iButtons = pev(this, pev_button);
   static Float:flMaxMoveSpeed; flMaxMoveSpeed = @Player_GetMaxMoveSpeed(this);
   static Float:vecVelocity[3]; pev(this, pev_velocity, vecVelocity);
@@ -318,7 +319,7 @@ Float:@Player_CalculateMovementVelocity(const &this, Float:vecOut[3]) {
 
   static Float:flSpeed; flSpeed = xs_vec_dot(vecVelocity, vecMovementDir);
 
-  xs_vec_mul_scalar(vecMovementDir, floatmin(flSpeed, flMaxMoveSpeed), vecOut);
+  xs_vec_mul_scalar(vecMovementDir, floatclamp(flSpeed, -flMaxMoveSpeed, flMaxMoveSpeed), vecOut);
 }
 
 Float:@Player_GetMaxMoveSpeed(const &this) {
