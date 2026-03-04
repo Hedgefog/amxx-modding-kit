@@ -10,9 +10,19 @@
 
 new g_szCameraModel[] = "models/rpgrocket.mdl";
 
-new g_pCamera = FM_NULLENT;
+new g_pfwfmUpdateClientData = 0;
+new g_pfwfmCheckVisibility = 0;
+new g_pfwfmAddToFullPackPost = 0;
+
+new g_pfwActivate;
+new g_pfwDeactivate;
+new g_pfwActivated;
+new g_pfwDeactivated;
 
 new g_pTrace;
+new g_pCamera = FM_NULLENT;
+new g_pCurrentPlayer = FM_NULLENT;
+new Float:g_flGameTime = 0.0;
 
 new g_iPlayerCameraBits = 0;
 new Float:g_rgflPlayerCameraDistance[MAX_PLAYERS + 1];
@@ -27,18 +37,6 @@ new g_rgpPlayerTargetEntity[MAX_PLAYERS + 1];
 new Float:g_rgvecPlayerCameraCurrentOrigin[MAX_PLAYERS + 1][3];
 new Float:g_rgvecPlayerCameraCurrentAngles[MAX_PLAYERS + 1][3];
 
-new g_pCurrentPlayer = FM_NULLENT;
-new Float:g_flGameTime = 0.0;
-
-new g_pfwfmUpdateClientData = 0;
-new g_pfwfmCheckVisibility = 0;
-new g_pfwfmAddToFullPackPost = 0;
-
-new g_pfwActivate;
-new g_pfwDeactivate;
-new g_pfwActivated;
-new g_pfwDeactivated;
-
 public plugin_precache() {
   g_pTrace = create_tr2();
 
@@ -46,7 +44,7 @@ public plugin_precache() {
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Camera", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Player Camera", "1.0.1", "Hedgehog Fog");
 
   RegisterHamPlayer(Ham_Spawn, "HamHook_Player_Spawn_Post", .Post = 1);
 
@@ -67,9 +65,12 @@ public plugin_natives() {
   register_native("PlayerCamera_SetDistance", "Native_SetDistance");
   register_native("PlayerCamera_SetAxisLock", "Native_SetAxisLock");
   register_native("PlayerCamera_SetThinkDelay", "Native_SetThinkDelay");
+  register_native("PlayerCamera_GetTargetEntity", "Native_GetTargetEntity");
   register_native("PlayerCamera_SetTargetEntity", "Native_SetTargetEntity");
   register_native("PlayerCamera_SetDamping", "Native_SetDamping");
   register_native("PlayerCamera_GetOrigin", "Native_GetOrigin");
+  register_native("PlayerCamera_SetOrigin", "Native_SetOrigin");
+  register_native("PlayerCamera_ResetOrigin", "Native_ResetCameraOrigin");
 }
 
 public plugin_end() {
@@ -134,10 +135,20 @@ public Native_SetThinkDelay(const iPluginId, const iArgc) {
   g_rgflPlayerCameraThinkDelay[pPlayer] = get_param_f(2);
 }
 
+public Native_GetTargetEntity(const iPluginId, const iArgc) {
+  new pPlayer = get_param(1);
+
+  return g_rgpPlayerTargetEntity[pPlayer];
+}
+
 public Native_SetTargetEntity(const iPluginId, const iArgc) {
   new pPlayer = get_param(1);
 
   g_rgpPlayerTargetEntity[pPlayer] = get_param(2);
+
+  if (g_iPlayerCameraBits & BIT(pPlayer & 31)) {
+    @Player_ResetCameraOrigin(pPlayer);
+  }
 }
 
 public Native_SetDamping(const iPluginId, const iArgc) {
@@ -156,7 +167,21 @@ public Native_GetOrigin(const iPluginId, const iArgc) {
   }
 }
 
+public Native_SetOrigin(const iPluginId, const iArgc) {
+  new pPlayer = get_param(1);
+
+  get_array_f(2, g_rgvecPlayerCameraCurrentOrigin[pPlayer], 3);
+}
+
+public Native_ResetCameraOrigin(const iPluginId, const iArgc) {
+  new pPlayer = get_param(1);
+
+  @Player_ResetCameraOrigin(pPlayer);
+}
+
 public client_connect(pPlayer) {
+  g_rgpPlayerTargetEntity[pPlayer] = FM_NULLENT;
+
   @Player_ResetVariables(pPlayer);
 }
 
@@ -215,9 +240,9 @@ SetPlayerCamera(const &pPlayer, bool:bValue) {
     if (iResult != PLUGIN_CONTINUE) return;
 
     g_rgflPlayerCameraNextThink[pPlayer] = 0.0;
-    pev(pPlayer, pev_origin, g_rgvecPlayerCameraCurrentOrigin[pPlayer]);
     g_iPlayerCameraBits |= BIT(pPlayer & 31);
 
+    @Player_ResetCameraOrigin(pPlayer);
     engfunc(EngFunc_SetView, pPlayer, g_pCamera);
 
     @Player_CameraThink(pPlayer);
@@ -287,6 +312,20 @@ CreatePlayerCamera(const &pPlayer) {
   return pCamera;
 }
 
+@Player_ResetCameraOrigin(const &this) {
+  new pTargetEnt = g_rgpPlayerTargetEntity[this];
+
+  if (pTargetEnt == FM_NULLENT) {
+    pTargetEnt = this;
+  }
+
+  if (IS_PLAYER(pTargetEnt)) {
+    ExecuteHam(Ham_EyePosition, pTargetEnt, g_rgvecPlayerCameraCurrentOrigin[this]);
+  } else {
+    pev(pTargetEnt, pev_origin, g_rgvecPlayerCameraCurrentOrigin[this]);
+  }
+}
+
 @Player_ResetVariables(const &this) {
   g_rgpPlayerTargetEntity[this] = this;
   g_rgflPlayerCameraDistance[this] = 200.0;
@@ -312,9 +351,15 @@ CreatePlayerCamera(const &pPlayer) {
   static Float:vecAngles[3];
   static Float:vecVelocity[3];  
 
-  if (g_rgpPlayerTargetEntity[this] > 0) {
-    pev(g_rgpPlayerTargetEntity[this], pev_origin, vecOrigin);
-    pev(g_rgpPlayerTargetEntity[this], pev_v_angle, vecAngles);
+  if (g_rgpPlayerTargetEntity[this] != FM_NULLENT) {
+    if (IS_PLAYER(g_rgpPlayerTargetEntity[this])) {
+      ExecuteHam(Ham_EyePosition, g_rgpPlayerTargetEntity[this], vecOrigin);
+      pev(g_rgpPlayerTargetEntity[this], pev_v_angle, vecAngles);
+    } else {
+      pev(g_rgpPlayerTargetEntity[this], pev_origin, vecOrigin);
+      pev(g_rgpPlayerTargetEntity[this], pev_angles, vecAngles);
+    }
+
     pev(g_rgpPlayerTargetEntity[this], pev_velocity, vecVelocity);
   } else {
     xs_vec_set(vecOrigin, 0.0, 0.0, 0.0);

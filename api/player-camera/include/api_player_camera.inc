@@ -84,6 +84,15 @@ native PlayerCamera_SetDistance(const pPlayer, Float:flDistance);
 native PlayerCamera_SetAxisLock(const pPlayer, bool:bLockPitch, bool:bLockYaw, bool:bLockRoll);
 
 /**
+ * Gets the target entity of the player's camera.
+ *
+ * @param pPlayer   The player entity.
+ *
+ * @return The target entity of the player's camera.
+ */
+native PlayerCamera_GetTargetEntity(const pPlayer);
+
+/**
  * Sets the target entity of the player's camera.
  *
  * @param pPlayer    The player entity.
@@ -127,6 +136,25 @@ native PlayerCamera_SetDamping(const pPlayer, Float:flDamping);
 native PlayerCamera_GetOrigin(const pPlayer, Float:vecOut[]);
 
 /**
+ * Sets the origin of the player's camera.
+ *
+ * @param pPlayer   The player entity.
+ * @param vecOrigin The origin vector.
+ *
+ * @noreturn
+ */
+native PlayerCamera_SetOrigin(const pPlayer, const Float:vecOrigin[]);
+
+/**
+ * Resets the origin of the player's camera.
+ *
+ * @param pPlayer   The player entity.
+ *
+ * @noreturn
+ */
+native PlayerCamera_ResetOrigin(const pPlayer);
+
+/**
  * Function called when the player's camera is activated.
  *
  * @param pPlayer The player entity.
@@ -136,15 +164,6 @@ native PlayerCamera_GetOrigin(const pPlayer, Float:vecOut[]);
 forward PlayerCamera_OnActivate(const pPlayer);
 
 /**
- * Function called when the player's camera is deactivated.
- *
- * @param pPlayer The player entity.
- *
- * @noreturn
- */
-forward PlayerCamera_OnDeactivate(const pPlayer);
-
-/**
  * Function called when the player's camera is activated.
  *
  * @param pPlayer The player entity.
@@ -152,6 +171,15 @@ forward PlayerCamera_OnDeactivate(const pPlayer);
  * @noreturn
  */
 forward PlayerCamera_OnActivated(const pPlayer);
+
+/**
+ * Function called when the player's camera is deactivated.
+ *
+ * @param pPlayer The player entity.
+ *
+ * @noreturn
+ */
+forward PlayerCamera_OnDeactivate(const pPlayer);
 
 /**
  * Function called when the player's camera is deactivated.
