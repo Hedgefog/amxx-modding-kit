@@ -31,10 +31,12 @@ new Float:g_rgflPlayerReleaseClimbBlock[MAX_PLAYERS + 1];
 
 public plugin_precache() {
   g_pTrace = create_tr2();
+
+  create_cvar("api_entity_force_version", API_ENTITY_FORCE_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Entity Force", "1.0.1", "Hedgehog Fog");
+  register_plugin("[API] Entity Force", API_ENTITY_FORCE_VERSION, "Hedgehog Fog");
 
   register_forward(FM_Think, "FMHook_Think");
 

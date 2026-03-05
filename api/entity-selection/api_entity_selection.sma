@@ -58,10 +58,12 @@ public plugin_precache() {
   }
 
   precache_model(g_szTrailModel);
+
+  create_cvar("api_entity_selection_version", API_ENTITY_SELECTION_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Entity Selection", "1.0.1", "Hedgehog Fog");
+  register_plugin("[API] Entity Selection", API_ENTITY_SELECTION_VERSION, "Hedgehog Fog");
 
   register_forward(FM_OnFreeEntPrivateData, "FMHook_OnFreeEntPrivateData");
 }
@@ -649,8 +651,6 @@ Selection_DrawSelection(const iId) {
   // xs_vec_set(rgflSquare[2], vecMax[0], vecMax[1], flHeight);
   // xs_vec_set(rgflSquare[3], vecMin[0], vecMax[1], flHeight);
 
-
-
   // // new Float:diagonalLength = floatsqroot(vecSize[0] * vecSize[0] + vecSize[1] * vecSize[1]);
   // // // new Float:diagonalAngle = floatatan2(vecSize[1], vecSize[0], radian) + xs_deg2rad(-flYaw);
   // // new Float:diagonalAngle = floatatan2(vecSize[1], vecSize[0], degrees);
@@ -892,7 +892,6 @@ stock UTIL_AngleMatrix(const Float:vecAngles[3], Float:rgMatrix[3][4]) {
   rgMatrix[1][3] = 0.0;
   rgMatrix[2][3] = 0.0;
 }
-
 
 /*--------------------------------[ Functions ]--------------------------------*/
 

@@ -5,6 +5,8 @@
 #include <fakemeta>
 #include <xs>
 
+#include <api_waypoint_markers_const>
+
 #define IS_PLAYER(%1) (%1 >= 1 && %1 <= MaxClients)
 #define MAX(%1,%2) (%1 > %2 ? %1 : %2)
 #define MIN(%1,%2) (%1 < %2 ? %1 : %2)
@@ -60,10 +62,12 @@ public plugin_precache() {
 
   g_pfwCreated = CreateMultiForward("WaypointMarker_OnCreated", ET_IGNORE, FP_CELL);
   g_pfwDestroy = CreateMultiForward("WaypointMarker_OnDestroy", ET_IGNORE, FP_CELL);
+
+  create_cvar("api_waypoint_markers_version", API_WAYPOINT_MARKERS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Waypoint Markers", "1.0.1", "Hedgehog Fog");
+  register_plugin("[API] Waypoint Markers", API_WAYPOINT_MARKERS_VERSION, "Hedgehog Fog");
 
   register_forward(FM_OnFreeEntPrivateData, "FMHook_OnFreeEntPrivateData", 0);
 

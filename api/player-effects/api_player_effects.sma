@@ -31,10 +31,12 @@ new Float:g_rgrgflPlayerEffectEnd[MAX_PLAYERS + 1][MAX_EFFECTS];
 
 public plugin_precache() {
   g_itEffectsIds = TrieCreate();
+
+  create_cvar("api_player_effects_version", API_PLAYER_EFFECTS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Effects", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Player Effects", API_PLAYER_EFFECTS_VERSION, "Hedgehog Fog");
 
   RegisterHamPlayer(Ham_Killed, "HamHook_Player_Killed", .Post = 0);
 

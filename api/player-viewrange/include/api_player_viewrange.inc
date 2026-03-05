@@ -5,6 +5,8 @@
 #endif
 #define _api_player_viewrange_included
 
+#include <api_player_viewrange_const>
+
 #pragma reqlib api_player_viewrange
 
 /**

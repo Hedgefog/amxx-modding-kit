@@ -3,6 +3,8 @@
 #endif
 #define _api_entity_grab_included
 
+#include <api_entity_grab_const>
+
 #pragma reqlib api_entity_grab
 
 /**

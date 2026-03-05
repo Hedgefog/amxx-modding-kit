@@ -3,6 +3,8 @@
 #endif
 #define _api_entity_selection_const_included
 
+#define API_ENTITY_SELECTION_VERSION "1.0.1"
+
 enum Selection {
   Selection_Invalid = -1
 };

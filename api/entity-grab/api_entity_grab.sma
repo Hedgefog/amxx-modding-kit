@@ -6,6 +6,8 @@
 #include <fakemeta>
 #include <xs>
 
+#include <api_entity_grab_const>
+
 #define BIT(%0) (1<<(%0))
 
 new g_pTrace;
@@ -21,10 +23,12 @@ new g_iPlayerGrabBits = 0;
 
 public plugin_precache() {
   g_pTrace = create_tr2();
+
+  create_cvar("api_entity_grab_version", API_ENTITY_GRAB_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Entity Grab", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Entity Grab", API_ENTITY_GRAB_VERSION, "Hedgehog Fog");
 
   RegisterHamPlayer(Ham_Killed, "HamHook_Player_Killed");
 }

@@ -80,10 +80,12 @@ new bool:g_bDebug = false;
 
 public plugin_precache() {
   g_itStateContexts = TrieCreate();
+
+  create_cvar("api_states_version", API_STATES_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] States", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] States", API_STATES_VERSION, "Hedgehog Fog");
 
   #if AMXX_VERSION_NUM < 183
     g_bDebug = !!get_cvar_num("developer");

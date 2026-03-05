@@ -78,10 +78,12 @@ public plugin_precache() {
   g_itShopIds = TrieCreate();
   g_itItemIds = TrieCreate();
   g_bCstrike = !!cstrike_running();
+
+  create_cvar("api_shops_version", API_SHOPS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Shops", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Shops", API_SHOPS_VERSION, "Hedgehog Fog");
 
   register_clcmd("shop", "Command_Shop", ADMIN_ALL);
   register_clcmd("shop_purchase", "Command_Purchase", ADMIN_ALL);
@@ -797,7 +799,6 @@ Shop_FormatPrice(const iId, const iPrice, szOut[], iLength) {
     return copy(szOut, iLength, "FREE");
   }
 }
-
 
 Shop_BuildMenuTitle(const iShopId, const pPlayer, szOut[], iMaxLength) {
   static iPos; iPos = 0;

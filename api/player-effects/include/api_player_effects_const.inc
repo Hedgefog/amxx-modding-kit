@@ -3,6 +3,8 @@
 #endif
 #define _api_player_effects_const_included
 
+#define API_PLAYER_EFFECTS_VERSION "1.0.0"
+
 enum {
   PlayerEffect_Set_Fail = 0,
   PlayerEffect_Set_Success,

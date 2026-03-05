@@ -3,6 +3,8 @@
 #endif
 #define _api_player_model_included
 
+#include <api_player_model_const>
+
 #pragma reqlib api_player_model
 
 /**

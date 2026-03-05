@@ -84,10 +84,12 @@ public plugin_precache() {
       OrpheuRegisterHook(OrpheuGetFunction("InstallGameRules"), "OrpheuHook_InstallGameRules_Post", OrpheuHookPost);
     }
   #endif
+
+  register_cvar("api_rounds_version", API_ROUNDS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Rounds", "2.1.0", "Hedgehog Fog");
+  register_plugin("[API] Rounds", API_ROUNDS_VERSION, "Hedgehog Fog");
 
   if (g_bIsCStrike) {
     register_event("HLTV", "Event_NewRound", "a", "1=0", "2=0");

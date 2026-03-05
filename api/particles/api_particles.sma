@@ -108,12 +108,14 @@ public plugin_precache() {
   g_itEffectsIds = TrieCreate();
   g_iszParticleClassName = engfunc(EngFunc_AllocString, "info_target");
   g_pTrace = create_tr2();
+
+  create_cvar("api_particles_version", API_PARTICLES_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Particles", "1.0.1", "Hedgehog Fog");
+  register_plugin("[API] Particles", API_PARTICLES_VERSION, "Hedgehog Fog");
 
-  g_pCvarEnabled = register_cvar("particles", "1");
+  g_pCvarEnabled = create_cvar("particles", "1");
   bind_pcvar_num(g_pCvarEnabled, g_bEnabled);
   hook_cvar_change(g_pCvarEnabled, "CvarHook_Enabled");
 

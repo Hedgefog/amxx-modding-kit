@@ -6,6 +6,8 @@
 
 #include <mp3_util>
 
+#include <api_player_music_const>
+
 #if AMXX_VERSION_NUM < 183
   #define client_disconnected client_disconnect
 #endif
@@ -92,10 +94,12 @@ new g_rgiPlayerMP3Volume[MAX_PLAYERS + 1];
 
 public plugin_precache() {
   g_itTrack = TrieCreate();
+
+  register_cvar("api_player_music_version", API_PLAYER_MUSIC_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Music", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Player Music", API_PLAYER_MUSIC_VERSION, "Hedgehog Fog");
 
   g_pfwTrackScheduled = CreateMultiForward("PlayerMusic_OnTrackScheduled", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_FLOAT);
   g_pfwTrackStart = CreateMultiForward("PlayerMusic_OnTrackStart", ET_IGNORE, FP_CELL, FP_CELL);

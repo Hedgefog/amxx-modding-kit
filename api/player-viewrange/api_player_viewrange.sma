@@ -9,6 +9,8 @@
 
 #include <command_util>
 
+#include <api_player_viewrange_const>
+
 #define IS_PLAYER(%1) (%1 >= 1 && %1 <= MaxClients)
 #define MAX_ENTITIES 2048
 
@@ -42,10 +44,12 @@ new Float:g_flGameTime = 0.0;
 public plugin_precache() {
   register_forward(FM_Spawn, "FMHook_Spawn", 0);
   register_forward(FM_SetModel, "FMHook_SetModel_Post", 1);
+
+  create_cvar("api_player_viewrange_version", API_PLAYER_VIEWRANGE_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player View Range", "0.9.0", "Hedgehog Fog");
+  register_plugin("[API] Player View Range", API_PLAYER_VIEWRANGE_VERSION, "Hedgehog Fog");
   
   gmsgFog = get_user_msgid("Fog");
 
@@ -277,7 +281,6 @@ Float:@Entity_GetVisibilityRadius(const &pEntity) {
 
   return g_rgflEntityVisibilityRadius[pEntity];
 }
-
 
 public Callback_QueryCvar_Fog(const pPlayer, const szCvar[], const szValue[]) {
   if (!str_to_num(szValue)) {

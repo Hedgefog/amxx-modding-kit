@@ -5,6 +5,8 @@
 #include <fakemeta>
 #include <xs>
 
+#include <api_player_dizziness_const>
+
 #define IS_ZERO_VECTOR(%1) (!(%1[0] || %1[1] || %1[2]))
 
 #define PLAYER_PREVENT_CLIMB (1<<5)
@@ -53,8 +55,12 @@ new Float:g_rgflPlayerNextPushThink[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerNextBlink[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerReleaseClimbBlock[MAX_PLAYERS + 1];
 
+public plugin_precache() {
+  create_cvar("api_player_dizziness_version", API_PLAYER_DIZZINESS_VERSION, FCVAR_SERVER);
+}
+
 public plugin_init() {
-  register_plugin("[API] Player Dizziness", "1.1.2", "Hedgehog Fog");
+  register_plugin("[API] Player Dizziness", API_PLAYER_DIZZINESS_VERSION, "Hedgehog Fog");
 
   RegisterHamPlayer(Ham_Player_Jump, "HamHook_Player_Jump_Post", .Post = 1);
   RegisterHamPlayer(Ham_Player_PreThink, "HamHook_Player_PreThink_Post", .Post = 1);

@@ -183,11 +183,13 @@ public plugin_precache() {
 
   InitStorages();
   InitBaseClasses();
+
+  create_cvar("api_custom_entities_version", API_CUSTOM_ENTITIES_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
   g_bPrecache = false;
-  register_plugin("[API] Custom Entities", "2.0.0", "Hedgehog Fog");
+  register_plugin("[API] Custom Entities", API_CUSTOM_ENTITIES_VERSION, "Hedgehog Fog");
 
   register_concmd("ce_spawn", "Command_Spawn", ADMIN_CVAR);
   register_concmd("ce_get_member", "Command_GetMember", ADMIN_CVAR);

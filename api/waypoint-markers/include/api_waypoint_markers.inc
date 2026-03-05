@@ -8,6 +8,8 @@
 #endif
 #define _api_waypoint_markers_included
 
+#include <api_waypoint_markers_const>
+
 #pragma reqlib api_waypoint_markers
 
 /**

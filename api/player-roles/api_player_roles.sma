@@ -80,10 +80,12 @@ public plugin_precache() {
   Role_Register(BASE_ROLE);
   Role_ImplementClassMethod(BASE_ROLE, PlayerRole_Method_Assign, get_func_pointer("@BaseRole_Assign"));
   Role_ImplementClassMethod(BASE_ROLE, PlayerRole_Method_Unassign, get_func_pointer("@BaseRole_Unassign"));
+
+  create_cvar("api_player_roles_version", API_PLAYER_ROLES_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Roles", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Player Roles", API_PLAYER_ROLES_VERSION, "Hedgehog Fog");
 
   register_concmd("player_role_assign", "Command_AssignRole", ADMIN_CVAR);
   register_concmd("player_role_unassign", "Command_UnassignRole", ADMIN_CVAR);
@@ -862,7 +864,6 @@ Role_ImplementClassMethod(const szRoleId[], const PlayerRole_Method:iMethod, con
 
   ClassDefineMethod(g_rgcRoleClass[iRoleId], g_rgszMethodNames[iMethod], fnCallback, true, ClassDataType_Cell);
 }
-
 
 Role_RegisterClassMethodHook(const szRoleId[], const PlayerRole_Method:iMethod, const Function:fnCallback, bool:bPost) {
   new iRoleId = Role_GetId(szRoleId);

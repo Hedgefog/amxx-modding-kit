@@ -3,6 +3,8 @@
 #endif
 #define _api_player_cosmetics_included
 
+#include <api_player_cosmetics_const>
+
 #pragma reqlib api_player_cosmetics
 
 /**

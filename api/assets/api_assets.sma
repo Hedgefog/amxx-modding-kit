@@ -40,20 +40,22 @@ new bool:g_bPrecache = true;
 public plugin_precache() {
   g_itLibraries = TrieCreate();
 
-  new pCvarErrorModel = register_cvar("assets_error_model", "sprites/bubble.spr");
-  new pCvarErrorSound = register_cvar("assets_error_sound", "common/null.wav");
+  new pCvarErrorModel = create_cvar("assets_error_model", "sprites/bubble.spr");
+  new pCvarErrorSound = create_cvar("assets_error_sound", "common/null.wav");
 
   get_pcvar_string(pCvarErrorModel, g_szErrorModel, charsmax(g_szErrorModel));
   get_pcvar_string(pCvarErrorSound, g_szErrorSound, charsmax(g_szErrorSound));
 
   precache_model(g_szErrorModel);
   precache_sound(g_szErrorSound);
+
+  create_cvar("api_assets_version", API_ASSETS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
   g_bPrecache = false;
 
-  register_plugin("[API] Assets", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Assets", API_ASSETS_VERSION, "Hedgehog Fog");
 }
 
 public plugin_natives() {

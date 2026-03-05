@@ -3,6 +3,8 @@
 #endif
 #define _api_particles_const_included
 
+#define API_PARTICLES_VERSION "1.0.1"
+
 #define PARTICLE_MAX_MEMBER_LENGTH 64
 
 enum ParticleEffectHook {

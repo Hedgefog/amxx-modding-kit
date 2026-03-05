@@ -7,6 +7,8 @@
 
 #include <command_util>
 
+#include <api_player_cosmetics_const>
+
 /*--------------------------------[ Constants ]--------------------------------*/
 
 #define COSMETIC_CLASSNAME "_cosmetic"
@@ -26,10 +28,12 @@ new bool:g_rgbEntityIsCosmetic[MAX_ENTITIES + 1] = { false, ... };
 
 public plugin_precache() {
   register_forward(FM_OnFreeEntPrivateData, "FMHook_OnFreeEntPrivateData");
+
+  create_cvar("api_player_cosmetics_version", API_PLAYER_COSMETICS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Cosmetics", "1.0.1", "Hedgehog Fog");
+  register_plugin("[API] Player Cosmetics", API_PLAYER_COSMETICS_VERSION, "Hedgehog Fog");
 
   RegisterHam(Ham_Think, "info_target", "HamHook_Target_Think", .Post = 0);
 

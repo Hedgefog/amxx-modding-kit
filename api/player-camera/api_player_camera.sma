@@ -5,6 +5,8 @@
 #include <hamsandwich>
 #include <xs>
 
+#include <api_player_camera_const>
+
 #define BIT(%0) (1<<(%0))
 #define IS_PLAYER(%1) (%1 >= 1 && %1 <= MaxClients)
 
@@ -41,10 +43,12 @@ public plugin_precache() {
   g_pTrace = create_tr2();
 
   precache_model(g_szCameraModel);
+
+  create_cvar("api_player_camera_version", API_PLAYER_CAMERA_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Camera", "1.0.1", "Hedgehog Fog");
+  register_plugin("[API] Player Camera", API_PLAYER_CAMERA_VERSION, "Hedgehog Fog");
 
   RegisterHamPlayer(Ham_Spawn, "HamHook_Player_Spawn_Post", .Post = 1);
 

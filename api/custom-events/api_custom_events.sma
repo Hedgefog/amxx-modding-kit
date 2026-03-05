@@ -52,10 +52,12 @@ new g_iEventsNum = 0;
 
 public plugin_precache() {
   g_itEventIds = TrieCreate();
+
+  create_cvar("api_custom_events_version", API_CUSTOM_EVENTS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Custom Events", "1.0.0", "Hedgehog Fog");
+  register_plugin("[API] Custom Events", API_CUSTOM_EVENTS_VERSION, "Hedgehog Fog");
 
   g_pfwEmit = CreateMultiForward("CustomEvent_OnEmit", ET_STOP, FP_STRING, FP_CELL);
 }

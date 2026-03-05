@@ -3,6 +3,8 @@
 #endif
 #define _api_custom_entities_const_included
 
+#define API_CUSTOM_ENTITIES_VERSION "2.0.0"
+
 #define CE_BASE_CLASSNAME "info_target"
 
 #define CE_MAX_NAME_LENGTH 64

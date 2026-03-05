@@ -14,6 +14,8 @@
 
 #pragma semicolon 1
 
+#include <api_player_model_const>
+
 #define IS_NULLSTR(%1) (%1[0] == 0)
 
 #define NATIVE_ERROR_NOT_CONNECTED(%1) log_error(AMX_ERR_NATIVE, "User %d is not connected", %1)
@@ -40,10 +42,12 @@ public plugin_precache() {
   g_iszSubModelClassname = engfunc(EngFunc_AllocString, "info_target");
   g_itPlayerSequenceModelIndexes = TrieCreate();
   g_itPlayerSequences = TrieCreate();
+
+  create_cvar("api_player_model_version", API_PLAYER_MODEL_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
-  register_plugin("[API] Player Model", "1.1.1", "Hedgehog Fog");
+  register_plugin("[API] Player Model", API_PLAYER_MODEL_VERSION, "Hedgehog Fog");
 
   register_forward(FM_SetClientKeyValue, "FMHook_SetClientKeyValue");
   register_forward(FM_UpdateClientData, "FMHook_UpdateClientData");

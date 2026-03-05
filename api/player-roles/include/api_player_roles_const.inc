@@ -3,6 +3,8 @@
 #endif
 #define _api_player_roles_const_included
 
+#define API_PLAYER_ROLES_VERSION "1.0.0"
+
 #define PLAYER_ROLE_MAX_LENGTH 32
 #define PLAYER_ROLE_ASSIGNMENT_GROUP_MAX_LENGTH 32
 #define PLAYER_ROLE_MAX_ROLES 64

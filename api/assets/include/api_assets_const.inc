@@ -3,6 +3,8 @@
 #endif
 #define _api_assets_const_included
 
+#define API_ASSETS_VERSION "1.0.0"
+
 #define ASSETS_MAX_ASSETS 1024
 #define ASSETS_MAX_LIBRARY_ID_LENGTH 32
 #define ASSETS_MAX_ASSET_ID_LENGTH 64

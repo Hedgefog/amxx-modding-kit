@@ -3,6 +3,8 @@
 #endif
 #define _api_shops_const_included
 
+#define API_SHOPS_VERSION "1.0.0"
+
 #define SHOPS_MAX_SHOP_ID_LENGTH 32
 #define SHOPS_MAX_SHOP_TITLE_LENGTH 64
 #define SHOPS_MAX_SHOP_DESCRIPTION_LENGTH 80

@@ -3,6 +3,8 @@
 #endif
 #define _api_custom_events_const_included
 
+#define API_CUSTOM_EVENTS_VERSION "1.0.0"
+
 #define MAX_CUSTOM_EVENT_KEY_LENGTH 64
 
 enum CustomEvent_Param {

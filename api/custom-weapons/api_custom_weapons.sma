@@ -219,12 +219,14 @@ public plugin_precache() {
 
   precache_model("sprites/bubble.spr");
   precache_sound("weapons/scock1.wav");
+
+  create_cvar("api_custom_weapons_version", API_CUSTOM_WEAPONS_VERSION, FCVAR_SERVER);
 }
 
 public plugin_init() {
   g_bPrecache = false;
 
-  register_plugin("[API] Custom Player Weapons", "Hedgehog Fog", "2.0.1");
+  register_plugin("[API] Custom Player Weapons", API_CUSTOM_WEAPONS_VERSION, "Hedgehog Fog");
 
   get_weaponname(BASE_WEAPON_ID, ARG_STRREF(g_szBaseWeaponName));
   g_iszBaseClassName = engfunc(EngFunc_AllocString, g_szBaseWeaponName);
@@ -1780,7 +1782,6 @@ ClassInstance:@Entity_CreateInstance(const &this, iId) {
   }
 }
 
-
 /*--------------------------------[ Entity Functions ]--------------------------------*/
 
 CreateEntity(const iId) {
@@ -2326,7 +2327,6 @@ any:ExecuteMethod(CW_Method:iMethod, const &pEntity, const iNativeArg = 0, const
         iHookResult\
       ),\
       fnCurrentHookCb = STACK_POP(METHOD_HOOKS_%1);
-
 
   #define HOOKABLE_METHOD_IMPLEMENTATION(%0)\
     CALL_METHOD_HOOKS<Pre>(%0)\
@@ -2902,7 +2902,6 @@ LoadCustomMaterials(const szPath[]) {
 
   fclose(iFile);
 }
-
 
 /*--------------------------------[ Base Methods Implementation ]--------------------------------*/
 
