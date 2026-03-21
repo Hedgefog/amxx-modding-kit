@@ -7,9 +7,16 @@
 
 #include <api_player_dizziness_const>
 
+/*--------------------------------[ Helpers ]--------------------------------*/
+
+#define BIT(%1) (1 << (%1))
 #define IS_ZERO_VECTOR(%1) (!(%1[0] || %1[1] || %1[2]))
 
-#define PLAYER_PREVENT_CLIMB (1<<5)
+#if !defined client_disconnected
+  #define client_disconnected client_disconnect
+#endif
+
+/*--------------------------------[ Constants ]--------------------------------*/
 
 #define PLAYER_DUCKING_MULTIPLIER 0.333
 #define PLAYER_STATIONARY_MULTIPLIER 0.5
@@ -31,7 +38,11 @@
 #define DIZZINESS_PUNCH_ANGLE_MIN 20.0
 #define DIZZINESS_PUNCH_ANGLE_MAX 75.0
 
+/*--------------------------------[ Global Variables ]--------------------------------*/
+
 new gmsgScreenFade;
+
+/*--------------------------------[ Plugin State ]--------------------------------*/
 
 new Float:g_flGameTime = 0.0;
 
@@ -44,6 +55,8 @@ new Float:g_flMinStrengthToBlink = 0.0;
 new Float:g_flPunchAngleFeedback = 0.0;
 new bool:g_bPushPreventClimb = false;
 
+/*--------------------------------[ Player State ]--------------------------------*/
+
 new Float:g_rgflPlayerDizzinessNextThink[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerDizzinessStrength[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerNextPushTargetUpdate[MAX_PLAYERS + 1];
@@ -54,6 +67,13 @@ new Float:g_rgflPlayerLastPushThink[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerNextPushThink[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerNextBlink[MAX_PLAYERS + 1];
 new Float:g_rgflPlayerReleaseClimbBlock[MAX_PLAYERS + 1];
+new g_iPlayerBits = 0;
+
+/*--------------------------------[ Plugin Hooks ]--------------------------------*/
+
+new HamHook:g_pfwhamPlayerPreThinkPost = HamHook:0;
+
+/*--------------------------------[ Plugin Initialization ]--------------------------------*/
 
 public plugin_precache() {
   create_cvar("api_player_dizziness_version", API_PLAYER_DIZZINESS_VERSION, FCVAR_SERVER);
@@ -63,7 +83,6 @@ public plugin_init() {
   register_plugin("[API] Player Dizziness", API_PLAYER_DIZZINESS_VERSION, "Hedgehog Fog");
 
   RegisterHamPlayer(Ham_Player_Jump, "HamHook_Player_Jump_Post", .Post = 1);
-  RegisterHamPlayer(Ham_Player_PreThink, "HamHook_Player_PreThink_Post", .Post = 1);
 
   bind_pcvar_float(create_cvar("dizziness_push_force", "150.0"), g_flPushForce);
   bind_pcvar_float(create_cvar("dizziness_push_rate_min", "0.5"), g_flPushRateMin);
@@ -83,15 +102,29 @@ public plugin_natives() {
   register_native("PlayerDizziness_Get", "Native_GetPlayerDizziness");
 }
 
+/*--------------------------------[ Natives ]--------------------------------*/
+
 public Native_SetPlayerDizziness(const iPluginId, const iArgc) {
   new pPlayer = get_param(1);
   new Float:flValue = get_param_f(2);
   
   g_rgflPlayerDizzinessStrength[pPlayer] = floatclamp(flValue, 0.0, 10.0);
 
+  new iCurrentBits = g_iPlayerBits;
+
+  if (flValue > 0.0) {
+    g_iPlayerBits |= BIT(pPlayer & 31);
+  } else {
+    g_iPlayerBits &= ~BIT(pPlayer & 31);
+  }
+
   if (g_rgflPlayerReleaseClimbBlock[pPlayer]) {
     @Player_SetClimbPrevention(pPlayer, false);
     g_rgflPlayerReleaseClimbBlock[pPlayer] = 0.0;
+  }
+
+  if (!!iCurrentBits != !!g_iPlayerBits) {
+    UpdateDynamicHooks();
   }
 }
 
@@ -100,6 +133,14 @@ public Float:Native_GetPlayerDizziness(const iPluginId, const iArgc) {
 
   return g_rgflPlayerDizzinessStrength[pPlayer];
 }
+
+/*--------------------------------[ Engine Forwards ]--------------------------------*/
+
+public server_frame() {
+  g_flGameTime = get_gametime();
+}
+
+/*--------------------------------[ Client Forwards ]--------------------------------*/
 
 public client_connect(pPlayer) {
   g_rgflPlayerDizzinessNextThink[pPlayer] = 0.0;
@@ -113,9 +154,13 @@ public client_connect(pPlayer) {
   xs_vec_set(g_rgvecPlayerPushVelocityAcc[pPlayer], 0.0, 0.0, 0.0);
 }
 
-public server_frame() {
-  g_flGameTime = get_gametime();
+public client_disconnected(pPlayer) {
+  g_iPlayerBits &= ~BIT(pPlayer & 31);
+
+  UpdateDynamicHooks();
 }
+
+/*--------------------------------[ Player Hooks ]--------------------------------*/
 
 public HamHook_Player_PreThink_Post(const pPlayer) {
   if (g_flGameTime >= g_rgflPlayerDizzinessNextThink[pPlayer]) {
@@ -134,6 +179,8 @@ public HamHook_Player_Jump_Post(const pPlayer) {
 
   return HAM_HANDLED;
 }
+
+/*--------------------------------[ Player Methods ]--------------------------------*/
 
 @Player_DizzinessThink(const &this) {
   if (g_rgflPlayerDizzinessStrength[this] <= 0.0) return;
@@ -339,15 +386,20 @@ Float:@Player_GetMaxMoveSpeed(const &this) {
 }
 
 @Player_SetClimbPrevention(const &this, bool:bValue) {
-  new iPlayerFlags = pev(this, pev_iuser3);
+  static iFlags; iFlags = pev(this, pev_flags);
 
   if (bValue) {
-    iPlayerFlags |= PLAYER_PREVENT_CLIMB;
+    if (~iFlags & FL_ONTRAIN) {
+      set_pev(this, pev_flags, iFlags | FL_ONTRAIN);
+    }
   } else {
-    iPlayerFlags &= ~PLAYER_PREVENT_CLIMB;
+    if (iFlags & FL_ONTRAIN) {
+      static iPhysicsFlags; iPhysicsFlags = get_ent_data(this, "CBasePlayer", "m_afPhysicsFlags");
+      if (~iPhysicsFlags & PFLAG_ONTRAIN) {
+        set_pev(this, pev_flags, iFlags & ~FL_ONTRAIN);
+      }
+    }
   }
-
-  set_pev(this, pev_iuser3, iPlayerFlags);
 }
 
 @Player_ClimbPreventionThink(const &this) {
@@ -355,7 +407,30 @@ Float:@Player_GetMaxMoveSpeed(const &this) {
     @Player_SetClimbPrevention(this, false);
     g_rgflPlayerReleaseClimbBlock[this] = 0.0;
   }
+
+  if (g_rgflPlayerReleaseClimbBlock[this]) {
+    // FL_ONTRAIN flag is updated every PreThink, so we need to update it after each PreThink
+    @Player_SetClimbPrevention(this, true);
+  }
 }
+
+/*--------------------------------[ Functions ]--------------------------------*/
+
+UpdateDynamicHooks() {
+  if (g_iPlayerBits) {
+    if (!g_pfwhamPlayerPreThinkPost) {
+      g_pfwhamPlayerPreThinkPost = RegisterHamPlayer(Ham_Player_PreThink, "HamHook_Player_PreThink_Post", .Post = 1);
+    } else {
+      EnableHamForward(g_pfwhamPlayerPreThinkPost);
+    }
+  } else {
+    if (g_pfwhamPlayerPreThinkPost) {
+      DisableHamForward(g_pfwhamPlayerPreThinkPost);
+    }
+  }
+}
+
+/*--------------------------------[ Stocks ]--------------------------------*/
 
 stock FixedUnsigned16(Float:flValue, iScale) {
   return clamp(floatround(flValue * iScale), 0, 0xFFFF);

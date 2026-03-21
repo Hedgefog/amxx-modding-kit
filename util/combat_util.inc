@@ -487,13 +487,13 @@ stock UTIL_SendWeaponAnim(pWeapon, iAnim, iBody = -1) {
 }
 
 stock UTIL_SendPlayerWeaponAnim(pPlayer, pWeapon, iAnim, iBody = -1) {
-  if (iBody == -1) {
-    iBody = pev(pWeapon, pev_body);
-  }
-
   set_pev(pPlayer, pev_weaponanim, iAnim);
 
   if (!is_user_bot(pPlayer)) {
+    if (iBody == -1) {
+      iBody = pev(pWeapon, pev_body);
+    }
+
     emessage_begin(MSG_ONE, SVC_WEAPONANIM, _, pPlayer);
     ewrite_byte(iAnim);
     ewrite_byte(iBody);

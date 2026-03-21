@@ -177,6 +177,10 @@ new g_iAmmosNum = 0;
 // new bool:g_rgbHookRegistered[MAX_PLAYER_ITEMS] = { false, ... };
 new ClassInstance:g_rgEntityClassInstances[MAX_ENTITIES + 1] = { Invalid_ClassInstance, ... };
 new Struct:g_rgEntityMethodPointers[MAX_ENTITIES + 1][EntityMethodPointer];
+new g_rgiEntityWeaponClip[MAX_ENTITIES + 1];
+new g_rgiEntityWeaponId[MAX_ENTITIES + 1];
+new g_rgiEntityWeaponPrimaryAmmoType[MAX_ENTITIES + 1];
+new g_rgiEntityWeaponSecondaryAmmoType[MAX_ENTITIES + 1];
 
 new bool:g_rgbPlayerShouldFixDeploy[MAX_PLAYERS + 1];
 new bool:g_rgbPlayerRightHand[MAX_PLAYERS + 1];
@@ -203,7 +207,7 @@ new HamHook:g_pfwhamItemUpdateClientData = HamHook:0;
 
 new bool:g_bDynamicHooksEnabled = false;
 
-/*--------------------------------[ Plugin Forwards ]--------------------------------*/
+/*--------------------------------[ Plugin Initialization ]--------------------------------*/
 
 public plugin_precache() {
   g_bPrecache = true;
@@ -241,6 +245,8 @@ public plugin_init() {
   if (g_bIsCStrike) {
     RegisterHam(Ham_Item_Holster, "weapon_knife", "HamHook_Knife_Holster", .Post = 0);
   }
+
+  register_forward(FM_SetClientKeyValue, "FMHook_SetClientKeyValue_Post", 1);
 
   register_message(gmsgDeathMsg, "Message_DeathMsg");
 
@@ -1463,16 +1469,16 @@ public HamHook_Base_UpdateItemInfo(const pItem) {
   return HAM_IGNORED;
 }
 
-public HamHook_Base_PreFrame(const pItem) {
-  static ClassInstance:pInstance; pInstance = GET_INSTANCE(pItem);
+// public HamHook_Base_PreFrame(const pItem) {
+//   static ClassInstance:pInstance; pInstance = GET_INSTANCE(pItem);
 
-  if (pInstance != Invalid_ClassInstance) {
-    CALL_METHOD<PreFrame>(pItem, 0);
-    return HAM_SUPERCEDE;
-  }
+//   if (pInstance != Invalid_ClassInstance) {
+//     CALL_METHOD<PreFrame>(pItem, 0);
+//     return HAM_SUPERCEDE;
+//   }
 
-  return HAM_IGNORED;
-}
+//   return HAM_IGNORED;
+// }
 
 public HamHook_Base_PostFrame(const pItem) {
   static ClassInstance:pInstance; pInstance = GET_INSTANCE(pItem);
@@ -1500,11 +1506,13 @@ public HamHook_Base_AddWeapon(const pItem) {
   static ClassInstance:pInstance; pInstance = GET_INSTANCE(pItem);
 
   if (pInstance != Invalid_ClassInstance) {
-    static ClassInstance:pInstance; pInstance = GET_INSTANCE(pItem);
-    set_ent_data(pItem, "CBasePlayerItem", "m_iId", ClassInstanceGetMember(pInstance, MEMBER(iId)));
-    set_ent_data(pItem, "CBasePlayerWeapon", "m_iClip", ClassInstanceGetMember(pInstance, MEMBER(iClip)));
-    set_ent_data(pItem, "CBasePlayerWeapon", "m_iPrimaryAmmoType", ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType)));
-    set_ent_data(pItem, "CBasePlayerWeapon", "m_iSecondaryAmmoType", ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType)));
+    new ClassInstance:pInstance = GET_INSTANCE(pItem);
+    new iId = ClassInstanceGetMember(pInstance, MEMBER(iId));
+    new iClip = ClassInstanceGetMember(pInstance, MEMBER(iClip));
+    new iPrimaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType));
+    new iSecondaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType));
+
+    @Entity_UpdateWeaponData(pItem, iId, iClip, iPrimaryAmmoType, iSecondaryAmmoType, true);
 
     static bool:bValue; bValue = CALL_METHOD<AddWeapon>(pItem, 0);
     SetHamReturnInteger(bValue);
@@ -1731,7 +1739,7 @@ public Message_DeathMsg(const iMsgId, const iDest, const pPlayer) {
   return PLUGIN_CONTINUE;
 }
 
-/*--------------------------------[ Entity Hookable Methods ]--------------------------------*/
+/*--------------------------------[ Entity Methods ]--------------------------------*/
 
 ClassInstance:@Entity_CreateInstance(const &this, iId) {
   if (this > g_iMaxEntities) return Invalid_ClassInstance;
@@ -1782,6 +1790,32 @@ ClassInstance:@Entity_CreateInstance(const &this, iId) {
   }
 }
 
+@Entity_UpdateWeaponData(const &this, iId, iClip, iPrimaryAmmoType, iSecondaryAmmoType, bool:bForce) {
+  if (this > MAX_ENTITIES) {
+    bForce = true;
+  }
+
+  if (bForce || g_rgiEntityWeaponId[this] != iId) {
+    set_ent_data(this, "CBasePlayerItem", "m_iId", iId);
+    g_rgiEntityWeaponId[this] = iId;
+  }
+
+  if (bForce || g_rgiEntityWeaponClip[this] != iClip) {
+    set_ent_data(this, "CBasePlayerWeapon", "m_iClip", iClip);
+    g_rgiEntityWeaponClip[this] = iClip;
+  }
+
+  if (bForce || g_rgiEntityWeaponPrimaryAmmoType[this] != iPrimaryAmmoType) {
+    set_ent_data(this, "CBasePlayerWeapon", "m_iPrimaryAmmoType", iPrimaryAmmoType);
+    g_rgiEntityWeaponPrimaryAmmoType[this] = iPrimaryAmmoType;
+  }
+
+  if (bForce || g_rgiEntityWeaponSecondaryAmmoType[this] != iSecondaryAmmoType) {
+    set_ent_data(this, "CBasePlayerWeapon", "m_iSecondaryAmmoType", iSecondaryAmmoType);
+    g_rgiEntityWeaponSecondaryAmmoType[this] = iSecondaryAmmoType;
+  }
+}
+
 /*--------------------------------[ Entity Functions ]--------------------------------*/
 
 CreateEntity(const iId) {
@@ -1807,10 +1841,13 @@ CreateEntity(const iId) {
 
   CALL_METHOD<UpdateAmmoType>(this, 0);
 
-  set_ent_data(this, "CBasePlayerItem", "m_iId", ClassInstanceGetMember(pInstance, MEMBER(iId)));
-  set_ent_data(this, "CBasePlayerWeapon", "m_iClip", ClassInstanceGetMember(pInstance, MEMBER(iClip)));
-  set_ent_data(this, "CBasePlayerWeapon", "m_iPrimaryAmmoType", ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType)));
-  set_ent_data(this, "CBasePlayerWeapon", "m_iSecondaryAmmoType", ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType)));
+  new iId = ClassInstanceGetMember(pInstance, MEMBER(iId));
+  new iClip = ClassInstanceGetMember(pInstance, MEMBER(iClip));
+  new iPrimaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType));
+  new iSecondaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType));
+
+  @Entity_UpdateWeaponData(this, iId, iClip, iPrimaryAmmoType, iSecondaryAmmoType, true);
+
   set_ent_data(this, "CBasePlayerWeapon", "m_iDefaultAmmo", ClassInstanceGetMember(pInstance, MEMBER(iDefaultAmmo)));
 
   #if defined _reapi_included
@@ -2938,14 +2975,14 @@ method <Base::Create> (const this) {
 }
 
 method <Base::Destroy> (const this) {
-  static ClassInstance:pInstance; pInstance = ClassInstanceGetCurrent();
+  new ClassInstance:pInstance = ClassInstanceGetCurrent();
 
   if (ClassInstanceHasMember(pInstance, MEMBER(pSwingTrace))) {
     new pSwingTrace = ClassInstanceGetMember(pInstance, MEMBER(pSwingTrace));
     free_tr2(pSwingTrace);
   }
 
-  static pPlayer; pPlayer = get_ent_data_entity(this, "CBasePlayerItem", "m_pPlayer");
+  new pPlayer = get_ent_data_entity(this, "CBasePlayerItem", "m_pPlayer");
 
   if (IS_PLAYER(pPlayer)) {
     ExecuteHamB(Ham_RemovePlayerItem, pPlayer, this);
@@ -2957,17 +2994,16 @@ method <Base::Destroy> (const this) {
 method <Base::IsWeapon> (const this) { return true; }
 
 method <Base::Spawn> (const this) {
-  static ClassInstance:pInstance; pInstance = ClassInstanceGetCurrent();
-  static Class:class; class = ClassInstanceGetClass(pInstance);
+  new ClassInstance:pInstance = ClassInstanceGetCurrent();
 
-  static iMaxClip; iMaxClip = ClassInstanceGetMember(pInstance, MEMBER(iMaxClip));
+  new iMaxClip = ClassInstanceGetMember(pInstance, MEMBER(iMaxClip));
   ClassInstanceSetMember(pInstance, MEMBER(iClip), iMaxClip);
 
   // set_ent_data(this, "CBasePlayerWeapon", "m_iClip", iMaxClip);
-  set_ent_data(this, "CBasePlayerItem", "m_iId", ClassInstanceGetMember(g_rgEntityClassInstances[this] , MEMBER(iId)));
+  set_ent_data(this, "CBasePlayerItem", "m_iId", ClassInstanceGetMember(pInstance , MEMBER(iId)));
 
-  static szClassname[CW_MAX_NAME_LENGTH]; ClassGetMetadataString(class, CLASS_METADATA_NAME, ARG_STRREF(szClassname));
-  set_pev(this, pev_classname, szClassname);
+  new iId = ClassInstanceGetMember(pInstance, MEMBER(Id));
+  set_pev(this, pev_classname, g_rgszClassClassnames[iId]);
 
   static szModel[MAX_RESOURCE_PATH_LENGTH]; ClassInstanceGetMemberString(pInstance, MEMBER(szModel), ARG_STRREF(szModel));
   engfunc(EngFunc_SetModel, this, szModel);
@@ -2992,7 +3028,6 @@ method <Base::PostFrame> (const this) {
 
   static iButtons; iButtons = pev(pPlayer, pev_button);
   static iUsableButtons; iUsableButtons = iButtons;
-  static Float:flNextAttack; flNextAttack = get_ent_data_float(pPlayer, "CBaseMonster", "m_flNextAttack");
   static iClip; iClip = ClassInstanceGetMember(pInstance, MEMBER(iClip));
   static iPrimaryAmmoType; iPrimaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType));
   static iSecondaryAmmoType; iSecondaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType));
@@ -3003,10 +3038,7 @@ method <Base::PostFrame> (const this) {
   static Float:flPumpTime; flPumpTime = ClassInstanceGetMember(pInstance, MEMBER(flPumpTime));
   static Float:flSmackTime; flSmackTime = ClassInstanceGetMember(pInstance, MEMBER(flSmackTime));
 
-  set_ent_data(this, "CBasePlayerItem", "m_iId", iWeaponId);
-  set_ent_data(this, "CBasePlayerWeapon", "m_iClip", iClip);
-  set_ent_data(this, "CBasePlayerWeapon", "m_iPrimaryAmmoType", iPrimaryAmmoType);
-  set_ent_data(this, "CBasePlayerWeapon", "m_iSecondaryAmmoType", iSecondaryAmmoType);
+  @Entity_UpdateWeaponData(this, iWeaponId, iClip, iPrimaryAmmoType, iSecondaryAmmoType, false);
 
   if (flSmackTime && flSmackTime <= g_flGameTime) {
     CALL_METHOD<Smack>(this, 0);
@@ -3052,8 +3084,11 @@ method <Base::PostFrame> (const this) {
     ClassInstanceSetMember(pInstance, MEMBER(flLastFireTime), 0.0);
   }
 
-  if (ClassInstanceGetMember(pInstance, MEMBER(bInReload)) && flNextAttack <= g_flGameTime) {
-    CALL_METHOD<CompleteReload>(this, 0);
+  if (ClassInstanceGetMember(pInstance, MEMBER(bInReload))) {
+    static Float:flNextAttack; flNextAttack = get_ent_data_float(pPlayer, "CBaseMonster", "m_flNextAttack");
+    if (flNextAttack <= g_flGameTime) {
+      CALL_METHOD<CompleteReload>(this, 0);
+    }
   }
 
   static bool:bIsDefusing; bIsDefusing = g_bIsCStrike ? get_ent_data(pPlayer, "CBasePlayer", "m_bIsDefusing") : false;
@@ -3336,10 +3371,12 @@ method <Base::UpdateClientData> (const this, const pPlayer) {
   static ClassInstance:pInstance; pInstance = ClassInstanceGetCurrent();
 
   // Synchronize variables for correct update
-  set_ent_data(this, "CBasePlayerItem", "m_iId", ClassInstanceGetMember(pInstance, MEMBER(iId)));
-  set_ent_data(this, "CBasePlayerWeapon", "m_iClip", ClassInstanceGetMember(pInstance, MEMBER(iClip)));
-  set_ent_data(this, "CBasePlayerWeapon", "m_iPrimaryAmmoType", ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType)));
-  set_ent_data(this, "CBasePlayerWeapon", "m_iSecondaryAmmoType", ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType)));
+  static iId; iId = ClassInstanceGetMember(pInstance, MEMBER(iId));
+  static iClip; iClip = ClassInstanceGetMember(pInstance, MEMBER(iClip));
+  static iPrimaryAmmoType; iPrimaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iPrimaryAmmoType));
+  static iSecondaryAmmoType; iSecondaryAmmoType = ClassInstanceGetMember(pInstance, MEMBER(iSecondaryAmmoType));
+
+  @Entity_UpdateWeaponData(this, iId, iClip, iPrimaryAmmoType, iSecondaryAmmoType, false);
 
   ExecuteHam(Ham_Item_UpdateClientData, this, pPlayer);
 }
@@ -3554,7 +3591,7 @@ method <Base::BubbleTrail> (const this, const pHit, const pTrace, bool:bGunShot)
   static Float:vecSrc[3]; ExecuteHam(Ham_Player_GetGunPosition, pPlayer, vecSrc);
   static Float:vecEnd[3]; get_tr2(pTrace, TR_vecEndPos, vecEnd);
 
-  UTIL_BubbleTrail(vecSrc, vecEnd, floatround(xs_vec_distance(vecSrc, vecEnd) / 64.0));
+  UTIL_BubbleTrail(vecSrc, vecEnd, floatround(get_distance_f(vecSrc, vecEnd) / 64.0));
 }
 
 /*--------------------------------[ Default Methods Implementation ]--------------------------------*/
@@ -4157,7 +4194,7 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
   // Only apply the fix for Counter-Strike
   static s_iCstrike = -1;
   if (s_iCstrike == -1) {
-      s_iCstrike = cstrike_running();
+    s_iCstrike = cstrike_running();
   }
 
   if (!s_iCstrike) return false;

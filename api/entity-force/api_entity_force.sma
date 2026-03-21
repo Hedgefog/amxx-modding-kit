@@ -7,10 +7,18 @@
 
 #include <api_entity_force_const>
 
-#define MAX_ENTITIES 2048
-#define PLAYER_PREVENT_CLIMB (1<<5)
+/*--------------------------------[ Helpers ]--------------------------------*/
 
+#define BIT(%1) (1 << (%1))
 #define IS_PLAYER(%1) (%1 >= 1 && %1 <= MaxClients)
+
+#if !defined client_disconnected
+  #define client_disconnected client_disconnect
+#endif
+
+/*--------------------------------[ Constants ]--------------------------------*/
+
+#define MAX_ENTITIES 2048
 
 enum AxisForceMode {
   AxisForceMode_Ignore,
@@ -18,16 +26,31 @@ enum AxisForceMode {
   AxisForceMode_Set
 };
 
-new g_pTrace;
+/*--------------------------------[ Plugin State ]--------------------------------*/
 
-new g_pfwEntityAddForce;
-new g_pfwEntityApplyForce;
+new g_pTrace;
 
 new Float:g_flGameTime = 0.0;
 new Float:g_rgvecEntityForce[MAX_ENTITIES + 1][3];
 new AxisForceMode:g_rgrgEntityAxisForceMode[MAX_ENTITIES + 1][3];
 
+/*--------------------------------[ Player State ]--------------------------------*/
+
 new Float:g_rgflPlayerReleaseClimbBlock[MAX_PLAYERS + 1];
+new g_rgiPlayerForceBits = 0;
+
+/*--------------------------------[ Forwards ]--------------------------------*/
+
+new g_pfwEntityAddForce;
+new g_pfwEntityApplyForce;
+
+/*--------------------------------[ Ham Hooks ]--------------------------------*/
+
+new bool:g_bDynamicHooksEnabled = false;
+new HamHook:g_pfwhamPlayerPreThink = HamHook:0;
+new HamHook:g_pfwhamPlayerPreThinkPost = HamHook:0;
+
+/*--------------------------------[ Plugin Initialization ]--------------------------------*/
 
 public plugin_precache() {
   g_pTrace = create_tr2();
@@ -41,7 +64,6 @@ public plugin_init() {
   register_forward(FM_Think, "FMHook_Think");
 
   RegisterHamPlayer(Ham_Spawn, "HamHook_Player_Spawn_Post", .Post = 1);
-  RegisterHamPlayer(Ham_Player_PreThink, "HamHook_Player_PostThink", .Post = 0);
 
   g_pfwEntityAddForce = CreateMultiForward("EntityForce_OnForceAdd", ET_IGNORE, FP_CELL, FP_ARRAY, FP_CELL);
   g_pfwEntityApplyForce = CreateMultiForward("EntityForce_OnForceApply", ET_IGNORE, FP_CELL, FP_ARRAY);
@@ -63,9 +85,7 @@ public plugin_end() {
   free_tr2(g_pTrace);
 }
 
-public server_frame() {
-  g_flGameTime = get_gametime();
-}
+/*--------------------------------[ Natives ]--------------------------------*/
 
 public Native_AddEntityForce(const iPluginId, const iArgc) {
   static pEntity; pEntity = get_param(1);
@@ -128,9 +148,19 @@ public Native_TransferMomentum(const iPluginId, const iArgc) {
   @Entity_TransferMomentum(pEntity, pTarget, flRatio, iFlags);
 }
 
-public HamHook_Player_Spawn_Post(pPlayer) {
-  @Player_ClimbPreventionThink(pPlayer);
+/*--------------------------------[ Engine Forwards ]--------------------------------*/
+
+public server_frame() {
+  g_flGameTime = get_gametime();
 }
+
+/*--------------------------------[ Client Forwards ]--------------------------------*/
+
+public client_disconnected(pPlayer) {
+  @Player_SetForceBits(pPlayer, false);
+}
+
+/*--------------------------------[ Hooks ]--------------------------------*/
 
 public FMHook_Think(const pEntity) {
   if (!IS_PLAYER(pEntity)) {
@@ -138,10 +168,19 @@ public FMHook_Think(const pEntity) {
   }
 }
 
-public HamHook_Player_PostThink(const pPlayer) {
-  @Entity_ApplyForce(pPlayer);
+public HamHook_Player_Spawn_Post(pPlayer) {
   @Player_ClimbPreventionThink(pPlayer);
 }
+
+public HamHook_Player_PreThink(const pPlayer) {
+  @Entity_ApplyForce(pPlayer);
+}
+
+public HamHook_Player_PreThink_Post(const pPlayer) {
+  @Player_ClimbPreventionThink(pPlayer);
+}
+
+/*--------------------------------[ Entity Methods ]--------------------------------*/
 
 @Entity_AddForce(const &this, const Float:vecForce[3], EntityForce_Flags:iFlags) {
   for (new iAxis = 0; iAxis < 3; ++iAxis) {
@@ -156,6 +195,10 @@ public HamHook_Player_PostThink(const pPlayer) {
       g_rgvecEntityForce[this][iAxis] += vecForce[iAxis];
       g_rgrgEntityAxisForceMode[this][iAxis] = AxisForceMode_Add;
     }
+  }
+
+  if (IS_PLAYER(this)) {
+    @Player_SetForceBits(this, true);
   }
 
   static ivecForce; ivecForce = PrepareArray(any:vecForce, 3, 0);
@@ -193,6 +236,7 @@ public HamHook_Player_PostThink(const pPlayer) {
   if (IS_PLAYER(this)) {
     @Player_SetClimbPrevention(this, true);
     g_rgflPlayerReleaseClimbBlock[this] = g_flGameTime + 0.1;
+    @Player_SetForceBits(this, false);
   }
 
   static ivecForce; ivecForce = PrepareArray(any:vecForce, 3, 0);
@@ -204,6 +248,10 @@ public HamHook_Player_PostThink(const pPlayer) {
   for (new i = 0; i < 3; ++i) {
     g_rgvecEntityForce[this][i] = 0.0;
     g_rgrgEntityAxisForceMode[this][i] = AxisForceMode_Ignore;
+  }
+
+  if (IS_PLAYER(this)) {
+    @Player_SetForceBits(this, false);
   }
 }
 
@@ -351,16 +399,48 @@ Float:@Entity_TransferMomentum(const &this, const &pTarget, Float:flRatio, Entit
   @Entity_AddForce(this, vecForce, iFlags);
 }
 
-@Player_SetClimbPrevention(const &this, bool:bValue) {
-  new iPlayerFlags = pev(this, pev_iuser3);
+/*--------------------------------[ Player Methods ]--------------------------------*/
+
+@Player_SetForceBits(const &this, bool:bValue) {
+  static iCurrentBits; iCurrentBits = g_rgiPlayerForceBits;
 
   if (bValue) {
-    iPlayerFlags |= PLAYER_PREVENT_CLIMB;
+    g_rgiPlayerForceBits |= BIT(this & 31);
   } else {
-    iPlayerFlags &= ~PLAYER_PREVENT_CLIMB;
+    g_rgiPlayerForceBits &= ~BIT(this & 31);
   }
 
-  set_pev(this, pev_iuser3, iPlayerFlags);
+  if (!!iCurrentBits != !!g_rgiPlayerForceBits) {
+    remove_task(0);
+
+    if (bValue) {
+      UpdateDynamicHooks();
+    } else {
+      // Adding delay for some debounce
+      set_task(1.0, "Task_UpdateDynamicHooks", 0);
+    }
+  }
+}
+
+@Player_SetClimbPrevention(const &this, bool:bValue) {
+  static iFlags; iFlags = pev(this, pev_flags);
+
+  if (bValue) {
+    if (~iFlags & FL_ONTRAIN) {
+      set_pev(this, pev_flags, iFlags | FL_ONTRAIN);
+    }
+
+    @Player_SetForceBits(this, true);
+  } else {
+    if (iFlags & FL_ONTRAIN) {
+      static iPhysicsFlags; iPhysicsFlags = get_ent_data(this, "CBasePlayer", "m_afPhysicsFlags");
+      if (~iPhysicsFlags & PFLAG_ONTRAIN) {
+        set_pev(this, pev_flags, iFlags & ~FL_ONTRAIN);
+      }
+    }
+
+    @Player_SetForceBits(this, false);
+  }
 }
 
 @Player_ClimbPreventionThink(const &this) {
@@ -368,4 +448,41 @@ Float:@Entity_TransferMomentum(const &this, const &pTarget, Float:flRatio, Entit
     @Player_SetClimbPrevention(this, false);
     g_rgflPlayerReleaseClimbBlock[this] = 0.0;
   }
+
+  if (g_rgflPlayerReleaseClimbBlock[this]) {
+    // FL_ONTRAIN flag is updated every PreThink, so we need to update it after each PreThink
+    @Player_SetClimbPrevention(this, true);
+  }
+}
+
+/*--------------------------------[ Tasks ]--------------------------------*/
+
+public Task_UpdateDynamicHooks() {
+  UpdateDynamicHooks();
+}
+
+/*--------------------------------[ Functions ]--------------------------------*/
+
+UpdateDynamicHooks() {
+  static bool:bValue; bValue = !!g_rgiPlayerForceBits;
+  if (g_bDynamicHooksEnabled == bValue) return;
+
+  if (g_rgiPlayerForceBits) {
+    if (!g_pfwhamPlayerPreThink) {
+      g_pfwhamPlayerPreThink = RegisterHamPlayer(Ham_Player_PreThink, "HamHook_Player_PreThink", .Post = 0);
+    } else {
+      EnableHamForward(g_pfwhamPlayerPreThink);
+    }
+
+    if (!g_pfwhamPlayerPreThinkPost) {
+      g_pfwhamPlayerPreThinkPost = RegisterHamPlayer(Ham_Player_PreThink, "HamHook_Player_PreThink_Post", .Post = 1);
+    } else {
+      EnableHamForward(g_pfwhamPlayerPreThinkPost);
+    }
+  } else {
+    DisableHamForward(g_pfwhamPlayerPreThink);
+    DisableHamForward(g_pfwhamPlayerPreThinkPost);
+  }
+
+  g_bDynamicHooksEnabled = bValue;
 }
