@@ -184,6 +184,7 @@ new g_rgiEntityWeaponSecondaryAmmoType[MAX_ENTITIES + 1];
 
 new bool:g_rgbPlayerShouldFixDeploy[MAX_PLAYERS + 1];
 new bool:g_rgbPlayerRightHand[MAX_PLAYERS + 1];
+new g_rgpPlayerInfoKeyBuffer[MAX_PLAYERS + 1];
 
 new g_rgEntityIds[MAX_ENTITIES + 1];
 
@@ -1086,6 +1087,8 @@ public client_connect(pPlayer) {
   g_rgbPlayerShouldFixDeploy[pPlayer] = true;
 
   QueryPlayerRightHandCvar(pPlayer);
+
+  g_rgpPlayerInfoKeyBuffer[pPlayer] = engfunc(EngFunc_GetInfoKeyBuffer, pPlayer);
 }
 
 /*--------------------------------[ Client Cvars ]--------------------------------*/
@@ -1393,8 +1396,10 @@ public HamHook_Base_Holster(const pItem) {
 
 SetPlayerCustomWeapon(const &pPlayer, bool:bValue) {
   if (bValue) {
+    @Player_SetPrediction(pPlayer, false);
     g_iPlayerHasCustomWeaponBits |= BIT(pPlayer & 31);
   } else {
+    @Player_SetPrediction(pPlayer, true);
     g_iPlayerHasCustomWeaponBits &= ~BIT(pPlayer & 31);
   }
 
@@ -1737,6 +1742,12 @@ public Message_DeathMsg(const iMsgId, const iDest, const pPlayer) {
   }
 
   return PLUGIN_CONTINUE;
+}
+
+/*--------------------------------[ Player Methods ]--------------------------------*/
+
+@Player_SetPrediction(const &this, bool:bValue) {
+  engfunc(EngFunc_SetClientKeyValue, this, g_rgpPlayerInfoKeyBuffer[this], "cl_lw", bValue ? "1" : "0");
 }
 
 /*--------------------------------[ Entity Methods ]--------------------------------*/
@@ -4149,14 +4160,14 @@ method <Base::GetSecondaryAmmoName> (const this, szOut[], iMaxLength) {
 
 /*--------------------------------[ Stocks ]--------------------------------*/
 
-stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT) {
+stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pDeployedItem = FM_NULLENT) {
   /*
     !!!HACKHACK: This function fixes the mirroring issue (incorrect hand positioning) when deploying Counter-Strike weapons.
 
     Usage:
       - Call this function during the initial weapon deployment (first deployment after joining the game)
         or after holstering the knife.
-      - Continuously call this function in the player's Think function without passing the "pRealItem" parameter
+      - Continuously call this function in the player's Think function without passing the "pDeployedItem" parameter
         to correctly manage the transition.
 
     How it works:
@@ -4205,6 +4216,7 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
   static Float:s_rgflPlayerFixStart[MAX_PLAYERS + 1] = { 0.0, ... };
   static Float:s_rgflPlayerFixRelease[MAX_PLAYERS + 1] = { 0.0, ... };
   static s_rgpPlayerItemToDeploy[MAX_PLAYERS + 1] = { FM_NULLENT, ... };
+  static s_rgpPlayerLastItem[MAX_PLAYERS + 1] = { FM_NULLENT, ... };
 
   static s_pFakeItem = FM_NULLENT;
   if (s_pFakeItem == FM_NULLENT) {
@@ -4258,12 +4270,19 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
               allowing a new transition to start before the previous one is fully released.
           */
           if (get_ent_data_entity(s_pFakeItem, "CBasePlayerItem", "m_pPlayer") == FM_NULLENT) {
+            // Make sure prediction is enabled
+            static pszInfoBuffer; pszInfoBuffer = engfunc(EngFunc_GetInfoKeyBuffer, pPlayer);
+            engfunc(EngFunc_SetClientKeyValue, pPlayer, pszInfoBuffer, "cl_lw", "1");
+
             // The orignal deploy function is using m_pPlayer member, so need to set it
             set_ent_data_entity(s_pFakeItem, "CBasePlayerItem", "m_pPlayer", pPlayer);
 
             // Deploy the fake item
             set_ent_data_entity(pPlayer, "CBasePlayer", "m_pActiveItem", s_pFakeItem);
             ExecuteHam(Ham_Item_Deploy, s_pFakeItem);
+
+            // Remove last item to avoid quick switching during transition
+            set_ent_data_entity(pPlayer, "CBasePlayer", "m_pLastItem", FM_NULLENT);
 
             // We don't want player to use the weapon
             set_ent_data_float(s_pFakeItem, "CBasePlayerWeapon", "m_flTimeWeaponIdle", 999.0);
@@ -4295,7 +4314,7 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
     }
   } else {
     // If the new transition is requested and current transition is already started, need to suspend current transition before start
-    if (pRealItem != FM_NULLENT && !s_rgflPlayerFixStart[pPlayer]) {
+    if (pDeployedItem != FM_NULLENT && !s_rgflPlayerFixStart[pPlayer]) {
       bShouldReleaseTransition = true;
     }
   }
@@ -4304,11 +4323,30 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
     // If the transition is finished
     if (s_rgflPlayerFixRelease[pPlayer] && s_rgflPlayerFixRelease[pPlayer] <= g_flGameTime) {
       // Restore a real item from the storage and redeploy
-      if (s_rgpPlayerItemToDeploy[pPlayer] != FM_NULLENT) {
-        if (pev_valid(s_rgpPlayerItemToDeploy[pPlayer])) {
-          set_ent_data_entity(pPlayer, "CBasePlayer", "m_pActiveItem", s_rgpPlayerItemToDeploy[pPlayer]);
-          ExecuteHamB(Ham_Item_Deploy, s_rgpPlayerItemToDeploy[pPlayer]);
+      static pItemToRedeploy; pItemToRedeploy = FM_NULLENT;
+      static pLastItem; pLastItem = FM_NULLENT;
+
+      if (s_rgpPlayerItemToDeploy[pPlayer] != FM_NULLENT && pev_valid(s_rgpPlayerItemToDeploy[pPlayer])) {
+        pItemToRedeploy = s_rgpPlayerItemToDeploy[pPlayer];
+      }
+
+      if (s_rgpPlayerLastItem[pPlayer] != FM_NULLENT && pev_valid(s_rgpPlayerLastItem[pPlayer])) {
+        pLastItem = s_rgpPlayerLastItem[pPlayer];
+
+        if (pItemToRedeploy == FM_NULLENT) {
+          pItemToRedeploy = s_rgpPlayerLastItem[pPlayer];
         }
+      }
+
+      ExecuteHam(Ham_Item_Holster, s_pFakeItem, 0);
+
+      set_ent_data_entity(pPlayer, "CBasePlayer", "m_pActiveItem", pItemToRedeploy);
+      set_ent_data_entity(pPlayer, "CBasePlayer", "m_pLastItem", pLastItem);
+
+      if (pItemToRedeploy != FM_NULLENT) {
+        // Do holster to avoid memory leaks
+        ExecuteHamB(Ham_Item_Holster, pItemToRedeploy, 0);
+        ExecuteHamB(Ham_Item_Deploy, pItemToRedeploy);
       }
 
       bShouldReleaseTransition = true;
@@ -4333,12 +4371,13 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
     s_rgflPlayerFixStart[pPlayer] = 0.0;
     s_rgflPlayerFixRelease[pPlayer] = 0.0;
     s_rgpPlayerItemToDeploy[pPlayer] = FM_NULLENT;
+    s_rgpPlayerLastItem[pPlayer] = FM_NULLENT;
 
     // client_print(0, print_console, "[%.2f] %n status: Released", g_flGameTime, pPlayer);
   }
 
   // New item passed. Schedule the time to process.
-  if (pRealItem != FM_NULLENT) {
+  if (pDeployedItem != FM_NULLENT) {
     // client_print(0, print_console, "[%.2f] %n requested schedule. Next available time: %.2f", g_flGameTime, pPlayer, s_flNextAvailableTransitionTime);
 
     // If not in transition - schedule a new transition
@@ -4358,7 +4397,12 @@ stock UTIL_FixWeaponDeploymentHand(const &pPlayer, const &pRealItem = FM_NULLENT
     }
 
     // Store real item to redeploy after the transition
-    s_rgpPlayerItemToDeploy[pPlayer] = pRealItem;
+    s_rgpPlayerItemToDeploy[pPlayer] = pDeployedItem;
+    s_rgpPlayerLastItem[pPlayer] = get_ent_data_entity(pPlayer, "CBasePlayer", "m_pActiveItem");
+    s_rgpPlayerLastItem[pPlayer] = get_ent_data_entity(pPlayer, "CBasePlayer", "m_pLastItem");
+
+    // Override deployment sound to prevent repeating on deployment fix
+    emit_sound(pPlayer, CHAN_WEAPON, "common/null.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 
     // client_print(0, print_console, "[%.2f] %n status: Scheduled to %.2f", g_flGameTime, pPlayer, s_rgflPlayerFixStart[pPlayer]);
 
