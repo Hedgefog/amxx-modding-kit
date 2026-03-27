@@ -503,6 +503,236 @@ public Message_TextMsg() {
 
 ---
 
+## Local Shortcut Macros
+
+Internal macros like `ENTITY_METHOD<Projectile>(Launch)` and `WEAPON_MEMBER<Rifle>(bSilenced)` use non-standard `MACRO<>()` syntax that **breaks syntax highlighting**. To avoid this, define **local shortcut macros** at the top of each plugin file.
+
+> **Rule**: Never use `MACRO<>()` patterns directly in plugin code. Always define local shortcuts (`METHOD`, `MEMBER`) at the top of the file and use those instead.
+
+### Custom Entities
+
+```pawn
+#pragma semicolon 1
+
+#include <amxmodx>
+
+#include <api_custom_entities>
+
+#include <mymod_internal>
+
+// Local shortcut macros for this entity
+#define ENTITY_NAME ENTITY(Projectile)
+#define METHOD ENTITY_METHOD<Projectile>
+#define MEMBER ENTITY_MEMBER<Projectile>
+
+/*--------------------------------[ Assets ]--------------------------------*/
+
+new const g_szModel[] = "models/mymod/projectile.mdl";
+
+/*--------------------------------[ Plugin Initialization ]--------------------------------*/
+
+public plugin_precache() {
+  precache_model(g_szModel);
+
+  CE_RegisterClass(ENTITY_NAME);
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Create, "@Entity_Create");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Spawn, "@Entity_Spawn");
+  CE_ImplementClassMethod(ENTITY_NAME, CE_Method_Touch, "@Entity_Touch");
+
+  // ✅ CORRECT: METHOD(Launch) expands cleanly
+  CE_RegisterClassMethod(ENTITY_NAME, METHOD(Launch), "@Entity_Launch", CE_Type_Cell);
+}
+
+public plugin_init() {
+  register_plugin(ENTITY_PLUGIN(Projectile), MYMOD_VERSION, "Author");
+}
+
+/*--------------------------------[ Methods ]--------------------------------*/
+
+@Entity_Create(const this) {
+  CE_CallBaseMethod();
+
+  CE_SetMemberString(this, CE_Member_szModel, g_szModel);
+
+  // ✅ CORRECT: MEMBER(flDamage) instead of ENTITY_MEMBER<Projectile>(flDamage)
+  CE_SetMember(this, MEMBER(flDamage), 50.0);
+  CE_SetMember(this, MEMBER(flSpeed), 1000.0);
+}
+
+@Entity_Spawn(const this) {
+  CE_CallBaseMethod();
+
+  set_pev(this, pev_movetype, MOVETYPE_FLY);
+  set_pev(this, pev_solid, SOLID_BBOX);
+}
+
+@Entity_Touch(const this, const pTarget) {
+  CE_CallBaseMethod(pTarget);
+
+  static Float:flDamage; flDamage = CE_GetMember(this, MEMBER(flDamage));
+  static pOwner; pOwner = pev(this, pev_owner);
+
+  if (IS_PLAYER(pTarget)) {
+    ExecuteHamB(Ham_TakeDamage, pTarget, this, pOwner, flDamage, DMG_GENERIC);
+  }
+
+  // ✅ Call custom method via shortcut
+  CE_CallMethod(this, METHOD(Explode));
+}
+
+@Entity_Launch(const this, const pTarget) {
+  // Launch logic...
+}
+```
+
+### Custom Weapons
+
+```pawn
+#pragma semicolon 1
+
+#include <amxmodx>
+
+#include <api_custom_weapons>
+
+#include <mymod_internal>
+
+// Local shortcut macros for this weapon
+#define WEAPON_NAME WEAPON(Rifle)
+#define METHOD WEAPON_METHOD<Rifle>
+#define MEMBER WEAPON_MEMBER<Rifle>
+
+/*--------------------------------[ Assets ]--------------------------------*/
+
+new const g_szModelV[] = "models/mymod/v_rifle.mdl";
+new const g_szModelP[] = "models/mymod/p_rifle.mdl";
+new const g_szModelW[] = "models/mymod/w_rifle.mdl";
+
+/*--------------------------------[ Plugin Initialization ]--------------------------------*/
+
+public plugin_precache() {
+  precache_model(g_szModelV);
+  precache_model(g_szModelP);
+  precache_model(g_szModelW);
+
+  CW_RegisterClass(WEAPON_NAME, "weapon_ak47");
+  CW_ImplementClassMethod(WEAPON_NAME, CW_Method_Create, "@Weapon_Create");
+  CW_ImplementClassMethod(WEAPON_NAME, CW_Method_Deploy, "@Weapon_Deploy");
+  CW_ImplementClassMethod(WEAPON_NAME, CW_Method_PrimaryAttack, "@Weapon_PrimaryAttack");
+
+  // ✅ CORRECT: METHOD(ToggleSilencer) expands cleanly
+  CW_RegisterClassMethod(WEAPON_NAME, METHOD(ToggleSilencer), "@Weapon_ToggleSilencer", CW_Type_Cell);
+}
+
+public plugin_init() {
+  register_plugin(WEAPON_PLUGIN(Rifle), MYMOD_VERSION, "Author");
+}
+
+/*--------------------------------[ Methods ]--------------------------------*/
+
+@Weapon_Create(const this) {
+  CW_CallBaseMethod();
+
+  CW_SetMemberString(this, CW_Member_szModel, g_szModelW);
+  CW_SetMember(this, CW_Member_iId, MyMod_WeaponId_Rifle);
+
+  // ✅ CORRECT: MEMBER(bSilenced) instead of WEAPON_MEMBER<Rifle>(bSilenced)
+  CW_SetMember(this, MEMBER(bSilenced), false);
+  CW_SetMember(this, MEMBER(flChargeTime), 0.0);
+}
+
+@Weapon_Deploy(const this) {
+  CW_CallBaseMethod();
+
+  CW_CallNativeMethod(this, CW_Method_DefaultDeploy, g_szModelV, g_szModelP, 0, "rifle");
+}
+
+@Weapon_PrimaryAttack(const this) {
+  CW_CallBaseMethod();
+
+  if (bool:CW_GetMember(this, MEMBER(bSilenced))) {
+    // Silenced fire logic...
+  }
+}
+
+@Weapon_ToggleSilencer(const this) {
+  // ✅ Toggle using shortcut member
+  CW_SetMember(this, MEMBER(bSilenced), !bool:CW_GetMember(this, MEMBER(bSilenced)));
+}
+```
+
+### Player Roles
+
+```pawn
+#pragma semicolon 1
+
+#include <amxmodx>
+
+#include <api_player_roles>
+#include <api_player_model>
+
+#include <mymod_internal>
+
+// Local shortcut macros for this role
+#define ROLE PLAYER_ROLE(Base)
+#define METHOD PLAYER_ROLE_METHOD<Base>
+#define MEMBER PLAYER_ROLE_MEMBER<Base>
+
+/*--------------------------------[ Plugin Initialization ]--------------------------------*/
+
+public plugin_precache() {
+  PlayerRole_Register(ROLE);
+
+  PlayerRole_ImplementMethod(ROLE, PlayerRole_Method_Assign, "@Role_Assign");
+  PlayerRole_ImplementMethod(ROLE, PlayerRole_Method_Unassign, "@Role_Unassign");
+
+  // ✅ CORRECT: METHOD(GetMaxSpeed) expands cleanly
+  PlayerRole_RegisterVirtualMethod(ROLE, METHOD(GetMaxSpeed), "@Role_GetMaxSpeed");
+  PlayerRole_RegisterVirtualMethod(ROLE, METHOD(GetMaxHealth), "@Role_GetMaxHealth");
+}
+
+public plugin_init() {
+  register_plugin(ROLE_PLUGIN(Base), MYMOD_VERSION, "Author");
+}
+
+/*--------------------------------[ Methods ]--------------------------------*/
+
+@Role_Assign(const pPlayer) {
+  PlayerRole_This_CallBaseMethod();
+
+  // ✅ CORRECT: MEMBER(flSpeed) instead of PLAYER_ROLE_MEMBER<Base>(flSpeed)
+  PlayerRole_This_SetMember(MEMBER(flSpeed), 250.0);
+}
+
+@Role_Unassign(const pPlayer) {
+  PlayerRole_This_CallBaseMethod();
+
+  PlayerModel_Reset(pPlayer);
+}
+
+Float:@Role_GetMaxSpeed(const pPlayer) {
+  return PlayerRole_This_GetMember(MEMBER(flSpeed));
+}
+
+Float:@Role_GetMaxHealth(const pPlayer) {
+  return 100.0;
+}
+```
+
+### Summary
+
+| API | Local Defines | Usage in Code |
+|-----|--------------|---------------|
+| Custom Entities | `#define METHOD ENTITY_METHOD<EntityName>` | `METHOD(Launch)` |
+| | `#define MEMBER ENTITY_MEMBER<EntityName>` | `MEMBER(flDamage)` |
+| Custom Weapons | `#define METHOD WEAPON_METHOD<WeaponName>` | `METHOD(ToggleSilencer)` |
+| | `#define MEMBER WEAPON_MEMBER<WeaponName>` | `MEMBER(bSilenced)` |
+| Player Roles | `#define METHOD PLAYER_ROLE_METHOD<RoleName>` | `METHOD(GetMaxSpeed)` |
+| | `#define MEMBER PLAYER_ROLE_MEMBER<RoleName>` | `MEMBER(flSpeed)` |
+
+> **Important**: The `MACRO<>()` syntax is only valid **inside macro definitions** (in `mymod_internal.inc`). In plugin code, always use local shortcuts or fully expanded constant names.
+
+---
+
 ## Macro Expansion Reference
 
 ```pawn
