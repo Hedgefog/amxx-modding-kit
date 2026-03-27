@@ -45,14 +45,18 @@ mymod/
 
 ---
 
-```markdown
 ## API References
 
-The `amxx-modding-kit` is typically integrated at `./.thirdparty/amxx-modding-kit`. Refer to these resources for documentation:
+Projects typically utilize `amxxpack` for dependency management and build automation, configured via `.amxxpack.json`.
 
-- **`README.md` files**: Provide module overviews, usage guides, and general documentation.
-- **`.inc` files**: Located in the `include/` directory, these contain the function signatures, constants, and technical API specifications.
-```
+### Standard Paths
+- **AMX Mod X Includes**: `./.compiler/include`
+- **Third-party Libraries**: `./.thirdparty`
+
+### Documentation Resources
+Refer to the following resources within `amxx-modding-kit` for implementation details:
+- **`README.md` files**: Module overviews, usage guides, and architectural documentation.
+- **`.inc` files**: Located in the `include/` directory; contains function signatures, constants, and technical API specifications.
 
 ---
 
