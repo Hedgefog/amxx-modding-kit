@@ -3916,6 +3916,7 @@ method <Base::DefaultSwing> (const this, Float:flDamage, Float:flRate, Float:flD
 
   ClassInstanceSetMember(pInstance, MEMBER(iShotsFired), ++iShotsFired);
   ClassInstanceSetMember(pInstance, MEMBER(flNextPrimaryAttack), g_flGameTime + flRate);
+  ClassInstanceSetMember(pInstance, MEMBER(flNextSecondaryAttack), g_flGameTime + flRate);
   ClassInstanceSetMember(pInstance, MEMBER(flSwingDamage), flDamage);
 
   // static Float:flSmackDelay;
