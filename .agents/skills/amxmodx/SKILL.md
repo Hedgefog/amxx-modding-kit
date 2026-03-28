@@ -11,56 +11,32 @@ This document provides an overview of coding conventions for AMX Mod X projects.
 
 | Category | Description |
 |----------|-------------|
-| [Basics](mdc:basics.md) | Syntax, basics |
-| [Code Style](mdc:code-style.md) | File structure, formatting, braces, spacing, plugin registration |
-| [Naming Conventions](mdc:naming-conventions.md) | Hungarian notation, variable prefixes, naming patterns |
-| [Constants & Enums](mdc:constants-enums.md) | Define constants, enums, TASKID constants |
-| [Macros](mdc:macros.md) | Common macros, IS_PLAYER, patterns to avoid |
-| [Function Declarations](mdc:function-declarations.md) | Return types, @ prefix, static variables |
-| [Validations](mdc:validations.md) | FM_NULLENT, entity checks, player validation, early returns |
+| [Basics](./basics.md) | Syntax, basics |
+| [Code Style](./code-style.md) | File structure, formatting, braces, spacing, plugin registration |
+| [Naming Conventions](./naming-conventions.md) | Hungarian notation, variable prefixes, naming patterns |
+| [Constants & Enums](./constants-enums.md) | Define constants, enums, TASKID constants |
+| [Macros](./macros.md) | Common macros, IS_PLAYER, patterns to avoid |
+| [Function Declarations](./function-declarations.md) | Return types, @ prefix, static variables |
+| [Validations](./validations.md) | FM_NULLENT, entity checks, player validation, early returns |
 
 ## API Patterns
 
 | Category | Description |
 |----------|-------------|
-| [Hooks](mdc:hooks.md) | Ham, FakeMeta, ReAPI, Event, Message hooks and handles |
-| [Forwards](mdc:forwards.md) | CreateMultiForward, ExecuteForward, pre/post patterns |
-| [Natives](mdc:natives.md) | Native registration and implementation |
-| [Callbacks](mdc:callbacks.md) | Tasks, SQL queries, CVar queries |
-| [Menus](mdc:menus.md) | Menu creation, callbacks, and patterns |
-| [Commands](mdc:commands.md) | Client, server, and console commands |
-| [CVars](mdc:cvars.md) | CVar creation, binding, and change hooks |
+| [Hooks](./hooks.md) | Ham, FakeMeta, ReAPI, Event, Message hooks and handles |
+| [Forwards](./forwards.md) | CreateMultiForward, ExecuteForward, pre/post patterns |
+| [Natives](./natives.md) | Native registration and implementation |
+| [Callbacks](./callbacks.md) | Tasks, SQL queries, CVar queries |
+| [Menus](./menus.md) | Menu creation, callbacks, and patterns |
+| [Commands](./commands.md) | Client, server, and console commands |
+| [CVars](./cvars.md) | CVar creation, binding, and change hooks |
 
 ## Performance & Data
 
 | Category | Description |
 |----------|-------------|
-| [Optimizations](mdc:optimizations.md) | Native call reduction, dynamic hooks, model path caching |
-| [Data Structures](mdc:data-structures.md) | Arrays, Tries, entity access, strings |
-
----
-
-## Custom API Reference
-
-For project-specific APIs, see dedicated skill files:
-
-| API | Description |
-|-----|-------------|
-| [assets](mdc:.agent/skills/assets/SKILL.md) | Asset management from JSON configs |
-| [custom-entities](mdc:.agent/skills/custom-entities/SKILL.md) | OOP-style custom entities |
-| [custom-events](mdc:.agent/skills/custom-events/SKILL.md) | Pub/sub event system |
-| [custom-weapons](mdc:.agent/skills/custom-weapons/SKILL.md) | Custom weapon framework |
-| [entity-force](mdc:.agent/skills/entity-force/SKILL.md) | Physics force application |
-| [entity-grab](mdc:.agent/skills/entity-grab/SKILL.md) | Entity grab and carry |
-| [player-camera](mdc:.agent/skills/player-camera/SKILL.md) | Custom camera views |
-| [player-model](mdc:.agent/skills/player-model/SKILL.md) | Custom player models |
-| [player-music](mdc:.agent/skills/player-music/SKILL.md) | MP3 music playback |
-| [player-roles](mdc:.agent/skills/player-roles/SKILL.md) | Player role management |
-| [rounds](mdc:.agent/skills/rounds/SKILL.md) | Round management |
-| [shops](mdc:.agent/skills/shops/SKILL.md) | In-game shop system |
-| [states](mdc:.agent/skills/states/SKILL.md) | State machine implementation |
-
-For large project organization with namespace constants, see [amxx-modding-kit-project](mdc:.agent/skills/amxx-modding-kit-project/SKILL.md).
+| [Optimizations](./optimizations.md) | Native call reduction, dynamic hooks, model path caching |
+| [Data Structures](./data-structures.md) | Arrays, Tries, entity access, strings |
 
 ---
 

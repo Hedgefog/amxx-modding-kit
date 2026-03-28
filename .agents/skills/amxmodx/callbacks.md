@@ -6,7 +6,7 @@ globs: "*.sma,*.inc"
 
 # Callbacks
 
-> **Note**: For menu callbacks and patterns, see [menus.md](mdc:menus.md).
+> **Note**: For menu callbacks and patterns, see [menus.md](./menus.md).
 
 ## Task Callbacks
 

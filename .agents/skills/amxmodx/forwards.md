@@ -8,7 +8,7 @@ globs: "*.sma,*.inc"
 
 Multi-forwards allow plugins to notify other plugins about events. This skill covers `CreateMultiForward` and `ExecuteForward` usage.
 
-> **Note**: For hook-based forwards (Ham Sandwich, FakeMeta, ReAPI), see [hooks.md](mdc:hooks.md).
+> **Note**: For hook-based forwards (Ham Sandwich, FakeMeta, ReAPI), see [hooks.md](./hooks.md).
 
 ## Forward Handle Variable Naming
 

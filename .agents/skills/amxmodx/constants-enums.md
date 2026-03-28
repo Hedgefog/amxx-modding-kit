@@ -55,8 +55,6 @@ enum TeamMenu_Item {
 };
 ```
 
-> **Note**: For large projects with namespace prefixes (`MyMod_*` pattern), see [amxx-modding-kit-project](mdc:.agent/skills/amxx-modding-kit-project/SKILL.md).
-
 ## Task ID Constants
 
 Define `TASKID_*` constants with high enough step between values to avoid collision:
