@@ -3,7 +3,7 @@
 #endif
 #define _api_entity_force_const_included
 
-#define API_ENTITY_FORCE_VERSION "1.0.1"
+#define API_ENTITY_FORCE_VERSION "1.0.2"
 
 enum EntityForce_Mode {
   EntityForce_Mode_Add = 0,
