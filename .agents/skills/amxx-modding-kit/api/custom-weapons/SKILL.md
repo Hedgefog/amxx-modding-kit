@@ -49,7 +49,7 @@ public plugin_precache() {
   
   // Register new weapon class
   CW_RegisterClass(WEAPON_NAME);
-  // Or extend existing: CW_RegisterClass(WEAPON_NAME, "weapon_ak47");
+  // Or extend existing: CW_RegisterClass(WEAPON_NAME, "weapon_othercustomweapon");
   
   // Implement base methods (override virtual methods)
   CW_ImplementClassMethod(WEAPON_NAME, CW_Method_Create, "@Weapon_Create");
@@ -61,6 +61,8 @@ public plugin_precache() {
   CW_RegisterClassMethod(WEAPON_NAME, SetPower, "@Weapon_SetPower", CW_Type_Cell);
 }
 ```
+
+Custom weapons can only be inherited from other custom weapons.
 
 ---
 
